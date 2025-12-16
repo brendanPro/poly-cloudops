@@ -1,0 +1,4 @@
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-commit hook - add any pre-commit checks here
+# For now, this is a placeholder
