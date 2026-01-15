@@ -2,6 +2,11 @@
 
 **Cloud-Translate Pipeline** - A Cloud Native automation architecture project
 
+## Students 
+- Samuel
+- Elyazid
+- Ouidad
+
 ## 📋 Project Description
 
 This project aims to design, deploy, and maintain a Cloud Native automation architecture using DevOps principles. The goal is to create a real-time data processing and translation pipeline using n8n and AI models, implementing modern pillars of Cloud engineering:
