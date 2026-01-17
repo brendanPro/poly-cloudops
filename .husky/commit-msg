@@ -1,6 +1,3 @@
-. "$(dirname -- "$0")/_/husky.sh"
-
-#
 # Git commit message hook to enforce Conventional Commits format
 # See: https://www.conventionalcommits.org/
 #
