@@ -21,17 +21,17 @@ subject=$(echo "$commit_msg" | head -n1)
 # Format: <type>(<scope>): <subject>
 # or: <type>: <subject>
 if ! echo "$subject" | grep -qE "^($valid_types)(\(.+\))?: .+"; then
-    echo "${RED}❌ Invalid commit message format!${NC}"
+    printf "${RED}❌ Invalid commit message format!${NC}\n"
     echo ""
-    echo "${YELLOW}Your commit message:${NC}"
+    printf "${YELLOW}Your commit message:${NC}\n"
     echo "  $subject"
     echo ""
-    echo "${YELLOW}Expected format:${NC}"
+    printf "${YELLOW}Expected format:${NC}\n"
     echo "  <type>(<scope>): <subject>"
     echo ""
-    echo "${YELLOW}Valid types:${NC} feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    printf "${YELLOW}Valid types:${NC} feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert\n"
     echo ""
-    echo "${YELLOW}Examples:${NC}"
+    printf "${YELLOW}Examples:${NC}\n"
     echo "  feat(terraform): add cloud run service"
     echo "  fix(dagger): resolve docker build issue"
     echo "  docs(readme): update installation instructions"
@@ -43,7 +43,7 @@ fi
 # Check subject length (max 72 characters recommended)
 subject_length=$(echo "$subject" | wc -c)
 if [ "$subject_length" -gt 72 ]; then
-    echo "${YELLOW}⚠️  Warning: Subject line is longer than 72 characters (${subject_length} chars)${NC}"
+    printf "${YELLOW}⚠️  Warning: Subject line is longer than 72 characters (${subject_length} chars)${NC}\n"
     echo "  Consider keeping it shorter for better readability"
     echo ""
 fi
@@ -51,10 +51,10 @@ fi
 # Check if subject starts with lowercase (except for proper nouns)
 first_char=$(echo "$subject" | cut -d: -f2 | sed 's/^ *//' | cut -c1)
 if echo "$first_char" | grep -q '[A-Z]'; then
-    echo "${YELLOW}⚠️  Warning: Subject should start with lowercase (imperative mood)${NC}"
+    printf "${YELLOW}⚠️  Warning: Subject should start with lowercase (imperative mood)${NC}\n"
     echo "  Example: 'add feature' not 'Add feature'"
     echo ""
 fi
 
-echo "${GREEN}✅ Commit message format is valid!${NC}"
+printf "${GREEN}✅ Commit message format is valid!${NC}\n"
 exit 0
