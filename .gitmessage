@@ -45,4 +45,9 @@
 #   ci(github): add dagger workflow for automated deployment
 #
 #   BREAKING CHANGE: terraform state backend now requires encryption
+#
+# Branch naming convention (enforced):
+#   <type>/<description> or <type>/<scope>/<description>
+#   Use kebab-case: feat/user-authentication, fix/api/connection-timeout
+#   Same types as commits apply to branch names
 
