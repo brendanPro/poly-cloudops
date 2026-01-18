@@ -108,10 +108,35 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Write clear commit messages following [Conventional Commits](https://www.conventionalcommits.org/) format
 - Format: `<type>(<scope>): <subject>`
 - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+- Commit message format is enforced via git hooks (see `.husky/commit-msg`)
+
+#### Branch Naming Convention
+
+Branch names must follow conventional commit types for consistency:
+
+- **Format**: `<type>/<description>` or `<type>/<scope>/<description>`
+- **Valid types**: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+- **Rules**:
+  - Use kebab-case (lowercase with hyphens) for descriptions
+  - No uppercase letters, spaces, or special characters
+  - Description should be concise and meaningful
+  - Protected branches (main, master, develop, staging, production) are exempt
+
+**Examples**:
+- `feat/user-authentication` - New feature for user authentication
+- `fix/api/connection-timeout` - Bug fix for API connection timeout (with scope)
+- `docs/update-readme` - Documentation update
+- `ci/dagger/add-build-workflow` - CI workflow addition (with scope)
+- `refactor/terraform/cloud-run-service` - Refactoring Terraform code (with scope)
+- `test/integration-tests` - Adding integration tests
+
+Branch naming is enforced via git hooks (see `.husky/pre-commit`)
+
+#### Other Guidelines
+
 - Use meaningful variable and resource names
 - Add comments for complex logic or non-obvious decisions
 - Keep functions and modules focused and small
-- Commit message format is enforced via git hooks (see `.husky/commit-msg`)
 
 ## Testing Instructions
 
