@@ -130,7 +130,9 @@ Branch names must follow conventional commit types for consistency:
 - `refactor/terraform/cloud-run-service` - Refactoring Terraform code (with scope)
 - `test/integration-tests` - Adding integration tests
 
-Branch naming is enforced via git hooks (see `.husky/pre-commit`)
+**Enforcement**:
+- `post-checkout` hook: Displays a friendly warning when you checkout/create a branch with an invalid name, with instructions to rename it
+- `pre-push` hook: Blocks the push if the branch name doesn't follow the convention (hard enforcement)
 
 #### Other Guidelines
 
