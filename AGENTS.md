@@ -109,7 +109,7 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Format: `<type>(<scope>): <subject>`
 - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
 - Commit message format is enforced via git hooks (see `.husky/commit-msg`)
-
+- For conventional commits we are using Husky version 9+, so the line `. "$(dirname -- "$0")/_/husky.sh"` is unnecessary in hook scripts and is obsolete ( can break version 10 )
 #### Branch Naming Convention
 
 Branch names must follow conventional commit types for consistency:
