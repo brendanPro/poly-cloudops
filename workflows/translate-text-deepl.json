@@ -1,12 +1,13 @@
 {
   "name": "Translate Text with DeepL (Webhook)",
+  "active": true,
   "nodes": [
     {
       "id": "webhook",
       "name": "Webhook Input",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [-500, 200],
+      "position": [-600, 0],
       "parameters": {
         "httpMethod": "POST",
         "path": "translate",
@@ -14,39 +15,46 @@
       }
     },
     {
-      "id": "setInput",
+      "id": "extract",
       "name": "Extract Input",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
-      "position": [-250, 200],
+      "position": [-350, 0],
       "parameters": {
         "values": {
           "string": [
-            {
-              "name": "source_text",
-              "value": "={{ $json.body.text }}"
-            },
-            {
-              "name": "text",
-              "value": "={{ $json.body.text }}"
-            },
-            {
-              "name": "target_lang",
-              "value": "={{ $json.body.target_lang }}"
-            }
+            { "name": "source_text", "value": "={{ $json.body.text }}" },
+            { "name": "target_lang", "value": "={{ $json.body.target_lang }}" }
           ]
         }
       }
     },
     {
-      "id": "deepl",
-      "name": "Translate with DeepL",
-      "type": "n8n-nodes-base.deepL",
-      "typeVersion": 1,
-      "position": [50, 200],
+      "id": "deepl_http",
+      "name": "DeepL HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-100, 0],
       "parameters": {
-        "text": "={{ $json.text }}",
-        "translateTo": "={{ $json.target_lang }}"
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'DeepL-Auth-Key ' + $env.DEEPL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $json.source_text }}" },
+            { "name": "target_lang", "value": "={{ $json.target_lang }}" }
+          ]
+        }
       }
     },
     {
@@ -54,24 +62,29 @@
       "name": "Insert Translation (Neon)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [300, 200],
+      "position": [250, 0],
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO translations (source_text, translated_text, target_lang) VALUES ({{$json.source_text}}, {{$json.text}}, {{$json.target_lang}});"
+        "query": "INSERT INTO public.translations (source_text, translated_text, target_lang)\nVALUES (\n  '{{ $node[\"Extract Input\"].json.source_text }}',\n  '{{ $json.translations[0].text }}',\n  '{{ $node[\"Extract Input\"].json.target_lang }}'\n);"
+      },
+      "credentials": {
+        "postgres": {
+          "name": "Postgres account"
+        }
       }
     },
     {
-      "id": "format",
+      "id": "response",
       "name": "Format Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
-      "position": [550, 200],
+      "position": [500, 0],
       "parameters": {
         "values": {
           "string": [
             {
               "name": "translated_text",
-              "value": "={{ $json.text }}"
+              "value": "={{ $node[\"DeepL HTTP\"].json.translations[0].text }}"
             }
           ]
         }
@@ -80,20 +93,16 @@
   ],
   "connections": {
     "Webhook Input": {
-      "main": [[{ "node": "Extract Input", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Extract Input", "type": "main" }]]
     },
     "Extract Input": {
-      "main": [[{ "node": "Translate with DeepL", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "DeepL HTTP", "type": "main" }]]
     },
-    "Translate with DeepL": {
-      "main": [[{ "node": "Insert Translation (Neon)", "type": "main", "index": 0 }]]
+    "DeepL HTTP": {
+      "main": [[{ "node": "Insert Translation (Neon)", "type": "main" }]]
     },
     "Insert Translation (Neon)": {
-      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Format Response", "type": "main" }]]
     }
-  },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1"
   }
 }
