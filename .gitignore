@@ -120,6 +120,8 @@ gcloud/
 !package.json
 !tsconfig.json
 !translation.json
+!translate-text-deepl.json
+
 
 # n8n workflow backups (if needed)
 workflows/backups/

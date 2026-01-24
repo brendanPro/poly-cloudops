@@ -1,0 +1,99 @@
+{
+  "name": "Translate Text with DeepL (Webhook)",
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-500, 200],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "translate",
+        "responseMode": "lastNode"
+      }
+    },
+    {
+      "id": "setInput",
+      "name": "Extract Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [-250, 200],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "source_text",
+              "value": "={{ $json.body.text }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.body.text }}"
+            },
+            {
+              "name": "target_lang",
+              "value": "={{ $json.body.target_lang }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "deepl",
+      "name": "Translate with DeepL",
+      "type": "n8n-nodes-base.deepL",
+      "typeVersion": 1,
+      "position": [50, 200],
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "translateTo": "={{ $json.target_lang }}"
+      }
+    },
+    {
+      "id": "postgres",
+      "name": "Insert Translation (Neon)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [300, 200],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO translations (source_text, translated_text, target_lang) VALUES ({{$json.source_text}}, {{$json.text}}, {{$json.target_lang}});"
+      }
+    },
+    {
+      "id": "format",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [550, 200],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "translated_text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Input": {
+      "main": [[{ "node": "Extract Input", "type": "main", "index": 0 }]]
+    },
+    "Extract Input": {
+      "main": [[{ "node": "Translate with DeepL", "type": "main", "index": 0 }]]
+    },
+    "Translate with DeepL": {
+      "main": [[{ "node": "Insert Translation (Neon)", "type": "main", "index": 0 }]]
+    },
+    "Insert Translation (Neon)": {
+      "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
