@@ -1,0 +1,267 @@
+{
+  "name": "Translate Text with DeepL (Webhook)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "translate",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "e14915c2-96cc-42b2-b942-1e1f2e23d732",
+      "name": "Webhook Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        480,
+        -272
+      ],
+      "webhookId": "aebb0a5d-7b02-42d1-98ed-4004120c4fbd"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "source_text",
+              "value": "={{ $json.body.text }}"
+            },
+            {
+              "name": "target_lang",
+              "value": "={{ $json.body.target_lang }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1cab1ea0-f29d-4037-a6a4-93597f31d0a7",
+      "name": "Extract Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'DeepL-Auth-Key ' + $env.DEEPL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.source_text }}"
+            },
+            {
+              "name": "target_lang",
+              "value": "={{ $json.target_lang }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fdcb46b6-16fb-4f33-8922-9cf6e50d72bc",
+      "name": "DeepL HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        896,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "translated_text",
+              "value": "={{ $node[\"DeepL HTTP\"].json.translations[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "200c13be-bf40-402d-95c7-3f0b45c24b5b",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "translations",
+          "mode": "list",
+          "cachedResultName": "translations"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": 0,
+            "source_text": "={{ $('Extract Input').item.json.body.text }}",
+            "translated_text": "={{ $json.translations[0].text }}",
+            "target_lang": "={{ $('Extract Input').item.json.body.target_lang }}",
+            "detected_src_lang": "={{ $json.translations[0].detected_source_language }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source_text",
+              "displayName": "source_text",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "translated_text",
+              "displayName": "translated_text",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "target_lang",
+              "displayName": "target_lang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "detected_src_lang",
+              "displayName": "detected_src_lang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1104,
+        -272
+      ],
+      "id": "234a8224-0195-4073-8299-77a70f7e5358",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "tR8CZQacBwxDorYA",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Input": {
+      "main": [
+        [
+          {
+            "node": "Extract Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Input": {
+      "main": [
+        [
+          {
+            "node": "DeepL HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepL HTTP": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "b51a02d6-cc7a-47bc-98c0-2365077fb47f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d650db31ab440212bc59851b03e2d5dd9e5bf156d7da793b18179ec42f8766d0"
+  },
+  "id": "jyZu48_gy67QDwNCniqmW",
+  "tags": []
+}
