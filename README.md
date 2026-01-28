@@ -141,45 +141,119 @@ By completing this project, students will acquire:
 
 ### Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd poly-cloudops
-   ```
+#### 1. Clone the repository
+```bash
+git clone <repository-url>
+cd poly-cloudops
+```
 
-2. **Install dependencies (automatically sets up git hooks)**
-   ```bash
-   bun install
-   ```
-   
-   > **Note:** This automatically installs Husky and sets up git hooks via the `prepare` script. No manual setup needed!
+#### 2. Install dependencies (automatically sets up git hooks)
+```bash
+bun install
+```
 
-3. **Set up environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials
-   ```
+> **Note:** This automatically installs Husky and sets up git hooks via the `prepare` script. No manual setup needed!
 
-4. **Initialize Dagger**
-   ```bash
-   dagger init
-   ```
+#### 3. Configure environment variables
+
+Create a `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and configure the following required variables:
+
+```bash
+# Database Configuration
+DB_HOST=your_neon_or_supabase_host
+DB_PORT=5432
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_SSL=true
+
+# n8n Configuration
+N8N_BASIC_AUTH_ACTIVE=true
+N8N_BASIC_AUTH_USER=admin
+N8N_BASIC_AUTH_PASSWORD=your_secure_password
+
+# AI API Tokens (required for workflow execution)
+OPENAI_API_KEY=your_openai_api_key
+DEEPL_API_KEY=your_deepl_api_key
+
+# Cloud Provider Credentials (for Terraform & deployment)
+# GCP Configuration
+GCP_PROJECT_ID=your_gcp_project_id
+GCP_REGION=europe-west1
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+
+# OR AWS Configuration
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=eu-west-1
+
+# GitHub Configuration (for CI/CD)
+GITHUB_TOKEN=your_github_token
+```
+
+> ⚠️ **Security Note:** Never commit `.env` files to version control. The `.gitignore` file already excludes them.
+
+#### 4. Start the project with Docker Compose
+
+Launch n8n and its dependencies locally:
+
+```bash
+docker-compose up -d
+```
+
+This will start:
+- **n8n** service: http://localhost:5678
+- **PostgreSQL** database (if configured locally)
+
+To view logs:
+```bash
+docker-compose logs -f
+```
+
+To stop the services:
+```bash
+docker-compose down
+```
 
 5. **Initialize Terraform**
    ```bash
    terraform init
    ```
 
-6. **Review the project structure**
-   - `dagger/` or `src/` - Dagger module with CI/CD workflow functions
-   - `terraform/` - Infrastructure as Code
-   - `docker/` - Docker configuration for n8n
-   - `.github/workflows/` - GitHub Actions workflows (calling Dagger)
-   - `workflows/` - n8n workflow definitions
-   - `.husky/` - Git hooks (automatically installed via Husky)
-   - `scripts/` - Utility scripts
+Validate configuration:
+```bash
+terraform validate
+```
 
-7. **Follow the phase-by-phase work breakdown above**
+#### 6. Initialize Dagger (for CI/CD workflows)
+
+```bash
+dagger init
+```
+
+#### 7. Access n8n
+
+Once Docker Compose is running:
+- Open your browser and navigate to: http://localhost:5678
+- Log in with your credentials set in `.env` (`N8N_BASIC_AUTH_USER` / `N8N_BASIC_AUTH_PASSWORD`)
+- Import or create workflows from the `workflows/` directory
+
+#### 8. Review the project structure
+- `dagger/` or `src/` - Dagger module with CI/CD workflow functions
+- `terraform/` - Infrastructure as Code
+- `docker/` - Docker configuration for n8n
+- `.github/workflows/` - GitHub Actions workflows (calling Dagger)
+- `workflows/` - n8n workflow definitions
+- `init_db/` - Database initialization scripts
+- `.husky/` - Git hooks (automatically installed via Husky)
+
+#### 9. Follow the phase-by-phase work breakdown above
 
 ## 📝 Commit Message Format
 
