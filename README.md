@@ -175,26 +175,9 @@ DB_SSL=true
 
 # n8n Configuration
 N8N_BASIC_AUTH_ACTIVE=true
-N8N_BASIC_AUTH_USER=admin
-N8N_BASIC_AUTH_PASSWORD=your_secure_password
 
 # AI API Tokens (required for workflow execution)
-OPENAI_API_KEY=your_openai_api_key
 DEEPL_API_KEY=your_deepl_api_key
-
-# Cloud Provider Credentials (for Terraform & deployment)
-# GCP Configuration
-GCP_PROJECT_ID=your_gcp_project_id
-GCP_REGION=europe-west1
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
-
-# OR AWS Configuration
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_REGION=eu-west-1
-
-# GitHub Configuration (for CI/CD)
-GITHUB_TOKEN=your_github_token
 ```
 
 > ⚠️ **Security Note:** Never commit `.env` files to version control. The `.gitignore` file already excludes them.
@@ -221,10 +204,11 @@ To stop the services:
 docker-compose down
 ```
 
-5. **Initialize Terraform**
-   ```bash
-   terraform init
-   ```
+#### 5. Initialize Terraform(for cloud deployment)
+
+```bash
+terraform init
+```
 
 Validate configuration:
 ```bash
