@@ -164,6 +164,12 @@ cp .env.example .env
 
 Edit `.env` and configure the following required variables:
 
+⚠️You need to generate your own `N8N_ENCRYPTION_KEY` using the command :
+
+```bash
+openssl rand -base64 24 
+```
+
 ```bash
 # Database Configuration
 DB_HOST=your_neon_or_supabase_host
@@ -175,6 +181,7 @@ DB_SSL=true
 
 # n8n Configuration
 N8N_BASIC_AUTH_ACTIVE=true
+N8N_ENCRYPTION_KEY=your_generated_n8n_encryption_key
 
 # AI API Tokens (required for workflow execution)
 DEEPL_API_KEY=your_deepl_api_key
@@ -204,40 +211,22 @@ To stop the services:
 docker-compose down
 ```
 
-#### 5. Initialize Terraform(for cloud deployment)
-
-```bash
-terraform init
-```
-
-Validate configuration:
-```bash
-terraform validate
-```
-
-#### 6. Initialize Dagger (for CI/CD workflows)
-
-```bash
-dagger init
-```
-
-#### 7. Access n8n
+#### 5. Access n8n
 
 Once Docker Compose is running:
 - Open your browser and navigate to: http://localhost:5678
 - Log in with your credentials set in `.env` (`N8N_BASIC_AUTH_USER` / `N8N_BASIC_AUTH_PASSWORD`)
 - Import or create workflows from the `workflows/` directory
 
-#### 8. Review the project structure
-- `dagger/` or `src/` - Dagger module with CI/CD workflow functions
-- `terraform/` - Infrastructure as Code
+#### 6. Review the project structure
+
 - `docker/` - Docker configuration for n8n
 - `.github/workflows/` - GitHub Actions workflows (calling Dagger)
 - `workflows/` - n8n workflow definitions
 - `init_db/` - Database initialization scripts
 - `.husky/` - Git hooks (automatically installed via Husky)
 
-#### 9. Follow the phase-by-phase work breakdown above
+#### 7. Follow the phase-by-phase work breakdown above
 
 ## 📝 Commit Message Format
 
