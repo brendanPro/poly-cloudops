@@ -119,6 +119,7 @@ gcloud/
 *.json
 !package.json
 !tsconfig.json
+!translation.json
 
 # n8n workflow backups (if needed)
 workflows/backups/
