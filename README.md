@@ -181,6 +181,28 @@ By completing this project, students will acquire:
 
 7. **Follow the phase-by-phase work breakdown above**
 
+### Staging Environment (Neon & Automation)
+
+To test the project in an environment close to production, we use Neon PostgreSQL as a managed database.
+
+1. **Database & User Automation**
+The staging environment is designed to be "zero-config" for the user:
+
+Automated Setup: When you launch the stack, a custom SQL Bootstrap script automatically creates the Admin user and bypasses the n8n welcome screen.
+
+Shared Data: Since we all share the same Neon Database, all workflows and credentials already registered in the neondb are immediately available to everyone.
+
+2. **How to launch**
+To start the staging stack with the pre-configured database:
+
+\# 1. Ensure your .env.staging is correctly filled with Neon credentials
+\# 2. Launch the stack using the staging environment file
+docker-compose --env-file .env.staging up -d
+**⚠️ Critical Warnings**
+Encryption Key: You must keep the same N8N_ENCRYPTION_KEY once the database is initialized. If you change this key, n8n will be unable to decrypt existing credentials, and you will lose access to your integrations (DeepL, etc.).
+
+Shared State: Any workflow modification or deletion in Staging will be reflected for all users sharing the same Neon instance.
+
 ## 📝 Commit Message Format
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. The format is enforced via git hooks.

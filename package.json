@@ -1,9 +1,6 @@
 {
   "name": "poly-cloudops",
   "version": "1.0.0",
-  "description": "Cloud Native automation architecture project with Terraform, Dagger, and n8n",
-  "private": true,
-  "packageManager": "bun@latest",
   "type": "module",
   "scripts": {
     "prepare": "husky && git config --local commit.template .gitmessage || true",
@@ -17,6 +14,7 @@
     "dotenv": "^16.4.5"
   },
   "dependencies": {
-    "pg": "^8.17.2"
+    "pg": "^8.17.2",
+    "bcrypt": "^5.1.1" 
   }
 }
