@@ -1,0 +1,89 @@
+# ============================================================================
+# TERRAFORM VARIABLES EXAMPLE
+# ============================================================================
+# Copy this file to terraform.tfvars and customize the values
+# Command: cp terraform.tfvars.example terraform.tfvars
+#
+# IMPORTANT: terraform.tfvars is in .gitignore and should NEVER be committed
+# ============================================================================
+
+# ============================================================================
+# PROJECT CONFIGURATION
+# ============================================================================
+
+project_id  = "polycloudops"
+region      = "europe-west1"
+zone        = "europe-west1-b"
+environment = "staging"
+
+# ============================================================================
+# ARTIFACT REGISTRY CONFIGURATION
+# ============================================================================
+
+artifact_registry_repository_id = "n8n-repo"
+artifact_registry_description   = "Docker repository for n8n custom images"
+
+# ============================================================================
+# CLOUD RUN CONFIGURATION
+# ============================================================================
+
+cloudrun_service_name = "n8n-service"
+
+# Docker image URL (update this after pushing your first image)
+# Format: REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY_ID/IMAGE_NAME:TAG
+cloudrun_image = "europe-west1-docker.pkg.dev/polycloudops/n8n-repo/n8n:latest"
+
+# Resource allocation
+cloudrun_cpu    = "1"     # 1 vCPU
+cloudrun_memory = "1Gi"   # 1GB RAM
+
+# Auto-scaling configuration
+cloudrun_min_instances = 0   # Scale to zero when no traffic
+cloudrun_max_instances = 10  # Maximum concurrent instances
+
+# Performance settings
+cloudrun_concurrency     = 80    # Requests per instance
+cloudrun_timeout         = 300   # 5 minutes timeout for long workflows
+cloudrun_cpu_throttling  = true  # Throttle CPU when idle
+
+# Access control
+cloudrun_allow_unauthenticated = true  # Allow public access (n8n has its own auth)
+
+# ============================================================================
+# N8N APPLICATION CONFIGURATION
+# ============================================================================
+
+n8n_port              = 5678
+n8n_timezone          = "Europe/Paris"
+n8n_protocol          = "https"
+n8n_executions_process = "main"
+
+# ============================================================================
+# SECRET MANAGER CONFIGURATION
+# ============================================================================
+# These secrets must be created in GCP Secret Manager before deployment
+# See README.md for instructions
+
+secret_n8n_encryption_key    = "n8n-encryption-key"
+secret_db_connection_string  = "n8n-db-connection-string"
+secret_deepl_api_key         = "deepl-api-key"
+
+# ============================================================================
+# CLOUD STORAGE CONFIGURATION
+# ============================================================================
+
+# Set to true if you want a Cloud Storage bucket for workflow exports, files, etc.
+create_storage_bucket = false
+
+# Bucket configuration (only used if create_storage_bucket = true)
+storage_bucket_name          = "polycloudops-n8n-storage"  # Must be globally unique!
+storage_bucket_location      = "EU"                        # Multi-region Europe
+storage_bucket_storage_class = "STANDARD"
+storage_bucket_versioning    = true
+
+# ============================================================================
+# IAM CONFIGURATION
+# ============================================================================
+
+cloudrun_service_account_name         = "n8n-cloudrun-sa"
+cloudrun_service_account_display_name = "n8n Cloud Run Service Account"
