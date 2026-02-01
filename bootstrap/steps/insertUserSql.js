@@ -1,4 +1,5 @@
 import pkg from 'pg';
+import bcrypt from 'bcrypt'; 
 const { Client } = pkg;
 
 export async function insertUserSql() {
@@ -8,54 +9,45 @@ export async function insertUserSql() {
     database: process.env.PGDATABASE,
     user: process.env.PGUSER,
     password: process.env.PGPASSWORD,
+    ssl: {
+      rejectUnauthorized: false 
+    }
   });
 
   try {
     await client.connect();
-    console.log(`[SQL] Mise à jour de l'utilisateur initial et bypass du setup...`);
+    console.log(`[SQL-NEON] Démarrage de l'automatisation n8n sur Neon...`);
 
-    // 1. UPDATE de l'utilisateur créé par défaut par n8n
-    // n8n crée un utilisateur avec un ID aléatoire et un email vide au boot.
-    // On lui donne vos accès (email + password haché) et on s'assure qu'il est Owner.
-    const updateOwnerSql = `
+    const plainPassword = process.env.N8N_ADMIN_PASSWORD || 'monSuperMotDePasse123!';
+    const email = process.env.N8N_ADMIN_EMAIL || 'admin@cloudops.com';
+
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(plainPassword, saltRounds);
+
+    console.log(`[SQL-NEON] Hash généré dynamiquement pour : ${email}`);
+
+    await client.query(`
       UPDATE "user" 
-      SET email = $1, 
-          password = $2,
-          "roleSlug" = 'global:owner',
-          "updatedAt" = NOW()
-      WHERE "roleSlug" = 'global:owner' OR email IS NULL OR email = '';
-    `;
-    
-    // Hash correspondant à votre mot de passe admin
-    const passwordHash = '$2a$10$MvKxTl.hglqxomQeI5cQROiMUlKACxVkOuf1QkNaYlZ9GOvs9n4mu';
-    
-    await client.query(updateOwnerSql, [
-      process.env.N8N_ADMIN_EMAIL, 
-      passwordHash
-    ]);
+      SET email = $1, password = $2, "roleSlug" = 'global:owner', "updatedAt" = NOW()
+      WHERE "roleSlug" = 'global:owner';
+    `, [email, passwordHash]);
 
-    // 2. Désactivation de l'écran de setup dans 'settings'
-    // On injecte les deux clés pour être certain que n8n ne redirige pas vers /setup
-    
-    // Désactive l'objet de gestion utilisateur
-    const settingsUserMgmt = `
-      INSERT INTO settings (key, value)
-      VALUES ('userManagement', '{"showSetupOnFirstLoad":false}')
-      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
-    `;
-    await client.query(settingsUserMgmt);
+    const settings = [
+      { key: 'userManagement', value: '{"showSetupOnFirstLoad":false}' },
+      { key: 'owner_setup_completed', value: 'true' }
+    ];
 
-    // Marque explicitement le setup comme complété
-    const settingsSetupDone = `
-      INSERT INTO settings (key, value)
-      VALUES ('owner_setup_completed', 'true')
-      ON CONFLICT (key) DO UPDATE SET value = 'true';
-    `;
-    await client.query(settingsSetupDone);
+    for (const setting of settings) {
+      await client.query(`
+        INSERT INTO settings (key, value)
+        VALUES ($1, $2)
+        ON CONFLICT (key) DO UPDATE SET value = $2;
+      `, [setting.key, setting.setting_value || setting.value]);
+    }
 
-    console.log(`[OK] SQL: L'utilisateur existant est configuré et le setup est forcé à 'false'.`);
+    console.log(`[OK] Configuration Neon terminée avec succès.`);
   } catch (err) {
-    console.error(`[ERROR] SQL failed:`, err.message);
+    console.error(`[ERROR] SQL Neon failed:`, err.message);
     throw err;
   } finally {
     await client.end();

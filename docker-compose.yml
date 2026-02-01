@@ -1,78 +1,44 @@
 services:
   n8n:
     image: n8nio/n8n:latest   
-    # ... reste de votre config ...
     container_name: n8n
     restart: unless-stopped
     ports:
       - "5678:5678"
     environment:
-      - N8N_EXECUTIONS_PROCESS=main # Exécute tout dans le processus principal (plus rapide pour le dev)
-      - N8N_EMAIL_MODE=none         # Évite les blocages liés aux emails
-      - N8N_COOKIES_SAMESITE=lax    # Aide pour l'ouverture auto du browser
-      # --- Database Config ---
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=${PGHOST}
-      - DB_POSTGRESDB_DATABASE=${PGDATABASE}
-      - DB_POSTGRESDB_USER=${PGUSER}
-      - DB_POSTGRESDB_PASSWORD=${PGPASSWORD}
-      - DB_POSTGRESDB_PORT=${PGPORT:-5432}
-      
-      # --- Security ---
+      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
+      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - DB_POSTGRESDB_SSL_ENABLED=${DB_POSTGRESDB_SSL_ENABLED}
+      - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
+      #- N8N_EXECUTIONS_PROCESS=main 
+      #- N8N_COOKIES_SAMESITE=lax    
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-
-      # --- SSL Config ---
-      - DB_POSTGRESDB_SSL_ENABLED=false
-      # --- n8n config ---
-      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      # - N8N_USER_MANAGEMENT_DISABLED=true
-      - N8N_HOST=${N8N_HOST:-localhost}
+      #- N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      #- N8N_HOST=${N8N_HOST:-localhost}
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://${N8N_HOST:-localhost}:5678/
-      - GENERIC_TIMEZONE=Europe/Paris
-      # --- Integrations ---
+      #- N8N_PROTOCOL=http
+      #- WEBHOOK_URL=http://${N8N_HOST:-localhost}:5678/
+      #- GENERIC_TIMEZONE=Europe/Paris
       - DEEPL_API_KEY=${DEEPL_API_KEY}
-
-      # --- Execution Settings ---
-      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
-      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
-      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
-      - EXECUTIONS_DATA_PRUNE=true
-      - EXECUTIONS_DATA_MAX_AGE=168
+      #- EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
+      #- EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      #- EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      #- EXECUTIONS_DATA_PRUNE=true
+      #- EXECUTIONS_DATA_MAX_AGE=168
 
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows
     
-    depends_on:
-      postgres:
-        condition: service_healthy
-
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:${N8N_PORT:-5678}/healthz || exit 1"]
       interval: 60s
       timeout: 10s
       retries: 5
-
-  postgres:
-    image: postgres:17-alpine
-    container_name: postgres
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=${PGUSER}
-      - POSTGRES_PASSWORD=${PGPASSWORD}
-      - POSTGRES_DB=${PGDATABASE}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./init_db:/docker-entrypoint-initdb.d
-    ports:
-      - "${PGPORT:-5432}:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U ${PGUSER} -d ${PGDATABASE}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
 
   bootstrap:
     image: oven/bun:1.1-alpine
@@ -92,6 +58,4 @@ services:
     restart: "no"
 volumes:
   n8n_data:
-    driver: local
-  db_data:
     driver: local
