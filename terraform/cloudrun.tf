@@ -193,6 +193,34 @@ resource "google_cloud_run_v2_service" "n8n" {
         }
       }
 
+      # --- Cloud Storage Configuration (if enabled) ---
+      # GCS Bucket name for file storage (audio, exports, etc.)
+      dynamic "env" {
+        for_each = var.create_storage_bucket ? [1] : []
+        content {
+          name  = "GCS_BUCKET_NAME"
+          value = var.storage_bucket_name
+        }
+      }
+
+      # Project ID for GCS operations
+      dynamic "env" {
+        for_each = var.create_storage_bucket ? [1] : []
+        content {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.project_id
+        }
+      }
+
+      # GCS Bucket region
+      dynamic "env" {
+        for_each = var.create_storage_bucket ? [1] : []
+        content {
+          name  = "GCS_BUCKET_REGION"
+          value = var.storage_bucket_location
+        }
+      }
+
       # --- Cloud Run Specific ---
       env {
         name  = "PORT"

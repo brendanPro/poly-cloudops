@@ -40,30 +40,9 @@ data "google_secret_manager_secret" "deepl_api_key" {
 }
 
 # ============================================================================
-# SECRET VERSIONS (LATEST)
-# ============================================================================
-
-# Get the latest version of n8n encryption key
-data "google_secret_manager_secret_version" "n8n_encryption_key_latest" {
-  secret  = data.google_secret_manager_secret.n8n_encryption_key.id
-  version = "latest"
-}
-
-# Get the latest version of database connection string
-data "google_secret_manager_secret_version" "db_connection_string_latest" {
-  secret  = data.google_secret_manager_secret.db_connection_string.id
-  version = "latest"
-}
-
-# Get the latest version of DeepL API key
-data "google_secret_manager_secret_version" "deepl_api_key_latest" {
-  secret  = data.google_secret_manager_secret.deepl_api_key.id
-  version = "latest"
-}
-
-# ============================================================================
 # NOTES
 # ============================================================================
 # - Secrets must be created manually before running terraform apply
 # - The Cloud Run service account needs secretAccessor role (granted in iam.tf)
 # - Secrets are mounted as environment variables in Cloud Run (see cloudrun.tf)
+# - Cloud Run references secrets directly by secret_id, no need to read values here

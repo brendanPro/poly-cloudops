@@ -60,4 +60,20 @@ resource "google_storage_bucket" "n8n_storage" {
   ]
 }
 
+# ============================================================================
+# STORAGE BUCKET IAM PERMISSIONS
+# ============================================================================
 
+# Grant Cloud Run service account access to read, write, and delete objects in the bucket
+resource "google_storage_bucket_iam_member" "cloudrun_storage_admin" {
+  count = var.create_storage_bucket ? 1 : 0
+
+  bucket = google_storage_bucket.n8n_storage[0].name
+  role   = "roles/storage.objectAdmin" # Allows create, read, update, delete objects
+  member = "serviceAccount:${google_service_account.cloudrun_sa.email}"
+
+  depends_on = [
+    google_storage_bucket.n8n_storage,
+    google_service_account.cloudrun_sa
+  ]
+}

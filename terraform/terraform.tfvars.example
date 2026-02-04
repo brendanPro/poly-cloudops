@@ -30,7 +30,6 @@ artifact_registry_description   = "Docker repository for n8n custom images"
 cloudrun_service_name = "n8n-service"
 
 # Docker image URL (update this after pushing your first image)
-# Format: REGION-docker.pkg.dev/PROJECT_ID/REPOSITORY_ID/IMAGE_NAME:TAG
 cloudrun_image = "europe-west1-docker.pkg.dev/polycloudops/n8n-repo/n8n:latest"
 
 # Resource allocation
@@ -73,11 +72,11 @@ secret_deepl_api_key         = "deepl-api-key"
 # ============================================================================
 
 # Set to true if you want a Cloud Storage bucket for workflow exports, files, etc.
-create_storage_bucket = false
+create_storage_bucket = true
 
 # Bucket configuration (only used if create_storage_bucket = true)
 storage_bucket_name          = "polycloudops-n8n-storage"  # Must be globally unique!
-storage_bucket_location      = "EU"                        # Multi-region Europe
+storage_bucket_location      = "europe-west1"              # Same region as Cloud Run for better performance
 storage_bucket_storage_class = "STANDARD"
 storage_bucket_versioning    = true
 

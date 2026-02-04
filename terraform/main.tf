@@ -23,7 +23,7 @@ locals {
     "storage.googleapis.com",              # Cloud Storage
     "iam.googleapis.com",                  # IAM
     "cloudresourcemanager.googleapis.com", # Resource Manager
-    "compute.googleapis.com", # Required for VPC and Networking
+    "compute.googleapis.com",              # Required for VPC and Networking
   ]
 }
 
