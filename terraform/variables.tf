@@ -55,7 +55,7 @@ variable "cloudrun_service_name" {
 variable "cloudrun_image" {
   description = "Docker image for Cloud Run service (will be updated after first push)"
   type        = string
-  default     = "europe-west1-docker.pkg.dev/polycloudops/n8n-repo/n8n:latest"
+  default     = "n8nio/n8n:latest"
 }
 
 variable "cloudrun_cpu" {
@@ -106,6 +106,11 @@ variable "cloudrun_allow_unauthenticated" {
   default     = true
 }
 
+# variable "db_host" { type = string }
+# variable "db_user" { type = string; default = "neondb_owner" }
+# variable "db_password" { type = string; sensitive = true }
+# variable "db_name" { type = string; default = "neondb" }
+
 # ============================================================================
 # N8N APPLICATION CONFIGURATION
 # ============================================================================
@@ -154,6 +159,15 @@ variable "secret_deepl_api_key" {
   description = "Name of the secret containing DeepL API key"
   type        = string
   default     = "deepl-api-key"
+}
+
+variable "neon_api_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "neon_project_id" {
+  type = string
 }
 
 # ============================================================================

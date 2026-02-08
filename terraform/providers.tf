@@ -26,3 +26,12 @@ provider "google-beta" {
     environment = var.environment
   }
 }
+
+# ============================================================================
+# NEON PROVIDER CONFIGURATION
+# ============================================================================
+# Used to fetch connection strings from your existing Neon database
+
+provider "neon" {
+  api_key = var.neon_api_key
+}
