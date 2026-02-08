@@ -29,15 +29,15 @@ artifact_registry_description   = "Docker repository for n8n custom images"
 
 cloudrun_service_name = "n8n-service"
 
-# Docker image URL (update this after pushing your first image)
-cloudrun_image = "europe-west1-docker.pkg.dev/polycloudops/n8n-repo/n8n:latest"
+# Docker image URL (uses official n8n image)
+cloudrun_image = "n8nio/n8n:latest"
 
 # Resource allocation
 cloudrun_cpu    = "1"     # 1 vCPU
 cloudrun_memory = "1Gi"   # 1GB RAM
 
 # Auto-scaling configuration
-cloudrun_min_instances = 0   # Scale to zero when no traffic
+cloudrun_min_instances = 1   # Persistently active to avoid cold starts
 cloudrun_max_instances = 10  # Maximum concurrent instances
 
 # Performance settings
@@ -48,6 +48,62 @@ cloudrun_cpu_throttling  = true  # Throttle CPU when idle
 # Access control
 cloudrun_allow_unauthenticated = true  # Allow public access (n8n has its own auth)
 
+# ============================================================================
+# N8N APPLICATION CONFIGURATION
+# ============================================================================
+
+n8n_port               = 5678
+n8n_timezone           = "Europe/Paris"
+n8n_protocol           = "https"
+n8n_executions_process = "main"
+
+# ============================================================================
+# NEON DATABASE CONFIGURATION
+# ============================================================================
+# Obtain your API key from https://console.neon.tech/app/settings/api-keys
+
+neon_api_key    = "napi_YOUR_NEON_API_KEY_HERE"     # Replace with your Neon API key
+neon_project_id = "your-neon-project-id-here"       # Replace with your Neon project ID
+
+# ============================================================================
+# SECRET MANAGER CONFIGURATION
+# ============================================================================
+# IMPORTANT: These secrets must be created in GCP Secret Manager BEFORE running terraform apply
+#
+# Create secrets with these commands (using terraform-sa impersonation):
+#   gcloud secrets create n8n-encryption-key --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   gcloud secrets create n8n-db-connection-string --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   gcloud secrets create deepl-api-key --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   gcloud secrets create db-host --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   gcloud secrets create db-password --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   gcloud secrets create db-database --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   gcloud secrets create db-user --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#
+# Secret values are NOT stored here for security reasons
+
+secret_n8n_encryption_key   = "n8n-encryption-key"              # Secret name in GCP Secret Manager
+secret_db_connection_string = "n8n-db-connection-string"        # Legacy: kept for backward compatibility
+secret_deepl_api_key        = "deepl-api-key"                   # DeepL translation API key secret
+
+# ============================================================================
+# CLOUD STORAGE CONFIGURATION
+# ============================================================================
+
+# Set to true if you want a Cloud Storage bucket for workflow exports, files, etc.
+create_storage_bucket = false
+
+# Bucket configuration (only used if create_storage_bucket = true)
+storage_bucket_name          = "polycloudops-n8n-storage" # Must be globally unique!
+storage_bucket_location      = "europe-west1"             # Same region as Cloud Run for better performance
+storage_bucket_storage_class = "STANDARD"
+storage_bucket_versioning    = true
+
+# ============================================================================
+# IAM CONFIGURATION
+# ============================================================================
+
+cloudrun_service_account_name         = "n8n-cloudrun-sa"
+cloudrun_service_account_display_name = "n8n Cloud Run Service Account"
 # ============================================================================
 # N8N APPLICATION CONFIGURATION
 # ============================================================================

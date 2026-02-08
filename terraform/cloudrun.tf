@@ -4,10 +4,11 @@
 # Deploys n8n as a serverless container on Cloud Run
 
 resource "google_cloud_run_v2_service" "n8n" {
-  project  = var.project_id
-  name     = var.cloudrun_service_name
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL" # Allow all traffic
+  project             = var.project_id
+  name                = var.cloudrun_service_name
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL" 
+  deletion_protection = false 
 
   labels = merge(
     local.common_labels,
@@ -18,43 +19,36 @@ resource "google_cloud_run_v2_service" "n8n" {
   )
 
   template {
-    # Service account for this Cloud Run service
     service_account = google_service_account.cloudrun_sa.email
 
-    # Scaling configuration
     scaling {
       min_instance_count = var.cloudrun_min_instances
       max_instance_count = var.cloudrun_max_instances
     }
 
-    # Request timeout (in seconds)
     timeout = "${var.cloudrun_timeout}s"
 
     containers {
-      # Docker image from Artifact Registry
       image = var.cloudrun_image
 
-      # Resource allocation
       resources {
         limits = {
           cpu    = var.cloudrun_cpu
           memory = var.cloudrun_memory
         }
         cpu_idle          = var.cloudrun_cpu_throttling
-        startup_cpu_boost = true # Faster cold starts
+        startup_cpu_boost = true 
       }
 
-      # Container port
       ports {
         name           = "http1"
         container_port = var.n8n_port
       }
 
-      # Startup probe (increased timeout for cold starts)
       startup_probe {
-        initial_delay_seconds = 5
+        initial_delay_seconds = 20
         timeout_seconds       = 5
-        period_seconds        = 3
+        period_seconds        = 5
         failure_threshold     = 10
         http_get {
           path = "/healthz"
@@ -62,9 +56,8 @@ resource "google_cloud_run_v2_service" "n8n" {
         }
       }
 
-      # Liveness probe
       liveness_probe {
-        initial_delay_seconds = 10
+        initial_delay_seconds = 30
         timeout_seconds       = 5
         period_seconds        = 10
         failure_threshold     = 3
@@ -74,30 +67,57 @@ resource "google_cloud_run_v2_service" "n8n" {
         }
       }
 
-      # ========================================================================
-      # ENVIRONMENT VARIABLES
-      # ========================================================================
-
-      # --- Database Configuration (from Secret Manager) ---
+      # --- Database Configuration (Individual Parameters) ---
       env {
         name  = "DB_TYPE"
         value = "postgresdb"
       }
 
-      # Parse Neon connection string for individual components
-      # Note: In production, consider using a more robust secret structure
-      # For now, we'll use a full connection string and let n8n parse it
       env {
-        name = "DB_POSTGRESDB_CONNECTION_STRING"
+        name  = "DB_POSTGRESDB_HOST"
         value_source {
           secret_key_ref {
-            secret  = data.google_secret_manager_secret.db_connection_string.secret_id
+            secret  = "db-host"
             version = "latest"
           }
         }
       }
 
-      # SSL Configuration for Neon
+      env {
+        name  = "DB_POSTGRESDB_PORT"
+        value = "5432"
+      }
+
+      env {
+        name  = "DB_POSTGRESDB_DATABASE"
+        value_source {
+          secret_key_ref {
+            secret  = "db-database"
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name  = "DB_POSTGRESDB_USER"  
+        value_source {
+          secret_key_ref {
+            secret  = "db-user"
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name  = "DB_POSTGRESDB_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = "db-password"
+            version = "latest"
+          }
+        }
+      }
+
       env {
         name  = "DB_POSTGRESDB_SSL_ENABLED"
         value = "true"
@@ -105,10 +125,10 @@ resource "google_cloud_run_v2_service" "n8n" {
 
       env {
         name  = "DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED"
-        value = "false"
+        value = "false" # Matches docker-compose for Neon compatibility
       }
 
-      # --- n8n Security Configuration ---
+      # --- n8n Security & Session ---
       env {
         name = "N8N_ENCRYPTION_KEY"
         value_source {
@@ -124,10 +144,15 @@ resource "google_cloud_run_v2_service" "n8n" {
         value = "false"
       }
 
+      env {
+        name  = "N8N_COOKIES_SAMESITE"
+        value = "lax" # Added to match docker-compose
+      }
+
       # --- n8n Server Configuration ---
       env {
         name  = "N8N_HOST"
-        value = "0.0.0.0" # Listen on all interfaces
+        value = "0.0.0.0" # Required for Cloud Run to bind properly
       }
 
       env {
@@ -137,10 +162,9 @@ resource "google_cloud_run_v2_service" "n8n" {
 
       env {
         name  = "N8N_PROTOCOL"
-        value = var.n8n_protocol
+        value = "https" # Cloud Run uses HTTPS for external traffic
       }
 
-      # Webhook URL (will be set to Cloud Run URL after deployment)
       env {
         name  = "WEBHOOK_URL"
         value = "https://${var.cloudrun_service_name}-${data.google_project.project.number}.${var.region}.run.app/"
@@ -151,7 +175,7 @@ resource "google_cloud_run_v2_service" "n8n" {
         value = var.n8n_timezone
       }
 
-      # --- n8n Execution Configuration ---
+      # --- n8n Executions (Aligned with Docker-Compose) ---
       env {
         name  = "N8N_EXECUTIONS_PROCESS"
         value = var.n8n_executions_process
@@ -179,10 +203,10 @@ resource "google_cloud_run_v2_service" "n8n" {
 
       env {
         name  = "EXECUTIONS_DATA_MAX_AGE"
-        value = "168" # 1 week
+        value = "168"
       }
 
-      # --- API Integrations ---
+      # --- Integrations ---
       env {
         name = "DEEPL_API_KEY"
         value_source {
@@ -193,8 +217,7 @@ resource "google_cloud_run_v2_service" "n8n" {
         }
       }
 
-      # --- Cloud Storage Configuration (if enabled) ---
-      # GCS Bucket name for file storage (audio, exports, etc.)
+      # --- Cloud Storage Dynamic Envs ---
       dynamic "env" {
         for_each = var.create_storage_bucket ? [1] : []
         content {
@@ -203,7 +226,6 @@ resource "google_cloud_run_v2_service" "n8n" {
         }
       }
 
-      # Project ID for GCS operations
       dynamic "env" {
         for_each = var.create_storage_bucket ? [1] : []
         content {
@@ -211,36 +233,18 @@ resource "google_cloud_run_v2_service" "n8n" {
           value = var.project_id
         }
       }
-
-      # GCS Bucket region
-      dynamic "env" {
-        for_each = var.create_storage_bucket ? [1] : []
-        content {
-          name  = "GCS_BUCKET_REGION"
-          value = var.storage_bucket_location
-        }
-      }
-
-      # --- Cloud Run Specific ---
-      env {
-        name  = "PORT"
-        value = tostring(var.n8n_port)
-      }
-
     }
   }
 
-  # Traffic configuration (100% to latest revision)
   traffic {
     type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
 
-  # Ensure dependencies are created first
   depends_on = [
     google_project_service.required_apis,
     google_service_account.cloudrun_sa,
-    google_secret_manager_secret_iam_member.cloudrun_sa_secret_accessor,
+    google_secret_manager_secret_iam_member.n8n_db_secret_access, # Fixed reference to database.tf
     google_artifact_registry_repository.n8n_repo,
   ]
 }

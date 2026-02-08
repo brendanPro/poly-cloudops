@@ -44,8 +44,5 @@ resource "google_project_service" "required_apis" {
   disable_dependent_services = false
 }
 
-# ============================================================================
-# PROJECT METADATA
-# ============================================================================
-
-# no metadata resources needed at this time
+# NOTE: data "google_project" "project" is managed in iam.tf 
+# to avoid duplication errors.

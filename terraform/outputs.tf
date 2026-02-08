@@ -79,11 +79,15 @@ output "storage_bucket_url" {
 # ============================================================================
 
 output "secret_names" {
-  description = "Names of the secrets referenced by Cloud Run"
+  description = "Names of the secrets referenced by Cloud Run (values are securely stored in GCP Secret Manager)"
   value = {
     encryption_key       = data.google_secret_manager_secret.n8n_encryption_key.secret_id
     db_connection_string = data.google_secret_manager_secret.db_connection_string.secret_id
     deepl_api_key        = data.google_secret_manager_secret.deepl_api_key.secret_id
+    db_host              = "db-host"              # Database hostname (Neon pooler endpoint)
+    db_password          = "db-password"          # Database password (masked in Secret Manager)
+    db_database          = "db-database"          # Database name
+    db_user              = "db-user"              # Database user
   }
 }
 

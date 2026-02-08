@@ -25,6 +25,10 @@ resource "google_secret_manager_secret_iam_member" "cloudrun_sa_secret_accessor"
     var.secret_n8n_encryption_key,
     var.secret_db_connection_string,
     var.secret_deepl_api_key,
+    "db-host",
+    "db-password",
+    "db-database",
+    "db-user",
   ])
 
   project   = var.project_id
