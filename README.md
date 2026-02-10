@@ -228,6 +228,81 @@ Once Docker Compose is running:
 
 #### 7. Follow the phase-by-phase work breakdown above
 
+## n8n User Setup (Password Hashing)
+
+n8n uses **bcrypt** to hash admin passwords. You need to generate a bcrypt hash and store it in `.env` before deployment.
+
+### Generate Password Hash
+
+Create a file `bootstrap/generate-password-hash.js`:
+
+```javascript
+import bcrypt from 'bcryptjs';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const args = process.argv.slice(2);
+const password = args[0] || process.env.N8N_ADMIN_PASSWORD || 'DefaultLocalPass123!';
+
+async function generateHash() {
+  try {
+    const saltRounds = 10;
+    const hash = await bcrypt.hash(password, saltRounds);
+    console.log('\n✅ Password Hash Generated:');
+    console.log(hash);
+    
+    // Update or create .env file
+    const envPath = path.join(process.cwd(), '.env');
+    let envContent = '';
+    
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, 'utf-8');
+    }
+    
+    // Add or replace hash (escape $ with $$ for Docker Compose)
+    const escapedHash = hash.replace(/\$/g, '$$');
+    
+    if (envContent.includes('N8N_ADMIN_PASSWORD_HASH=')) {
+      envContent = envContent.replace(
+        /N8N_ADMIN_PASSWORD_HASH=.*/,
+        `N8N_ADMIN_PASSWORD_HASH=${escapedHash}`
+      );
+    } else {
+      envContent += `\nN8N_ADMIN_PASSWORD_HASH=${escapedHash}\n`;
+    }
+    
+    fs.writeFileSync(envPath, envContent);
+    console.log('\n✅ Hash saved to .env (with escaped $ for Docker Compose)');
+    
+  } catch (err) {
+    console.error('❌ Error:', err.message);
+    process.exit(1);
+  }
+}
+
+generateHash();
+```
+
+### Usage
+
+```bash
+# Install dependency
+bun add bcryptjs
+
+# Generate and save hash
+node generate-password-hash.js "YourSecurePassword123!"
+```
+
+**Environment Variables (`.env`):**
+
+```env
+N8N_ADMIN_EMAIL=admin@cloudops.com
+N8N_ADMIN_PASSWORD=YourSecurePassword123!
+N8N_ADMIN_PASSWORD_HASH=$$2b$$10$$xyz...
+```
+
+> **Note:** `$$` escapes `$` for Docker Compose. The script handles this automatically.
+
 ## 📝 Commit Message Format
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. The format is enforced via git hooks.
