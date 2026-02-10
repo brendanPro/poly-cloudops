@@ -50,19 +50,25 @@ services:
       timeout: 5s
       retries: 10
 
-  bootstrap:
-    image: oven/bun:1.1-alpine
-    container_name: n8n-bootstrap
-    working_dir: /app
-    volumes:
-      - .:/app  
-    env_file:
-      - .env
-    command: >
-      sh -c "bun install && bun bootstrap/bootstrap.js"
+  db-bootstrap:
+    image: postgres:17-alpine
+    container_name: n8n-db-setup
     depends_on:
       n8n:
         condition: service_healthy
+    volumes:
+      - ./bootstrap/setup-n8n.sql:/scripts/setup-n8n.sql:ro
+    tmpfs:
+      - /var/lib/postgresql/data:mode=0700
+    environment:
+      - PGPASSWORD=${PGPASSWORD}
+      - ADMIN_EMAIL=${N8N_ADMIN_EMAIL:-admin@cloudops.com}
+      - ADMIN_HASH=${N8N_ADMIN_PASSWORD_HASH} 
+    command: >
+      sh -c "psql -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} 
+      -v admin_email=\"$$ADMIN_EMAIL\" 
+      -v admin_hash=\"$$ADMIN_HASH\" 
+      -f /scripts/setup-n8n.sql"
     restart: "no"
 volumes:
   n8n_data:
