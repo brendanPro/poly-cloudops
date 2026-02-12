@@ -203,6 +203,30 @@ Encryption Key: You must keep the same N8N_ENCRYPTION_KEY once the database is i
 
 Shared State: Any workflow modification or deletion in Staging will be reflected for all users sharing the same Neon instance.
 
+## n8n Admin Auto-Setup
+
+The database bootstrap script automatically creates the admin user with a hashed password using PostgreSQL's `pgcrypto` extension.
+
+**Environment Variables (`.env`):**
+
+```env
+N8N_ADMIN_EMAIL=SET YOUR EMAIL
+N8N_ADMIN_PASSWORD=SET YOUR PASSWORD
+N8N_ENCRYPTION_KEY=SET YOUR ENCRYPTION KEY
+```
+
+**How It Works:**
+
+The SQL bootstrap script ([`bootstrap/setup-n8n.sql`](bootstrap/setup-n8n.sql)) uses PostgreSQL's `pgcrypto` to:
+1. Enable `pgcrypto` extension for bcrypt hashing
+2. Hash the plaintext password with `crypt(password, gen_salt('bf', 10))` (bcrypt, 10 rounds)
+3. Store the hash in the `user` table
+4. Configure user settings to skip n8n's welcome screen
+
+n8n automatically decrypts stored credentials using `N8N_ENCRYPTION_KEY` at runtime.
+
+> **Important:** Keep the same `N8N_ENCRYPTION_KEY` once initialized. Changing it will break access to stored credentials.
+
 ## 📝 Commit Message Format
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. The format is enforced via git hooks.

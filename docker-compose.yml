@@ -13,23 +13,10 @@ services:
       - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
       - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
       - DB_POSTGRESDB_SSL_ENABLED=${DB_POSTGRESDB_SSL_ENABLED}
-      - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
-      #- N8N_EXECUTIONS_PROCESS=main 
-      #- N8N_COOKIES_SAMESITE=lax    
+      - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false    
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      #- N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      #- N8N_HOST=${N8N_HOST:-localhost}
       - N8N_PORT=5678
-      #- N8N_PROTOCOL=http
-      #- WEBHOOK_URL=http://${N8N_HOST:-localhost}:5678/
-      #- GENERIC_TIMEZONE=Europe/Paris
       - DEEPL_API_KEY=${DEEPL_API_KEY}
-      #- EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
-      #- EXECUTIONS_DATA_SAVE_ON_ERROR=all
-      #- EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
-      #- EXECUTIONS_DATA_PRUNE=true
-      #- EXECUTIONS_DATA_MAX_AGE=168
-
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows
@@ -40,21 +27,25 @@ services:
       timeout: 10s
       retries: 5
 
-  bootstrap:
-    image: oven/bun:1.1-alpine
-    container_name: n8n-bootstrap
-    working_dir: /app
-    volumes:
-      - .:/app  # Monte la racine (contient package.json)
-    env_file:
-      - .env
-    # On utilise 'bun install' (tout court) pour installer ce qui est dans package.json 
-    # ET on lance le bon fichier 'bootstrap/http.js'
-    command: >
-      sh -c "bun install && bun bootstrap/bootstrap.js"
+  db-bootstrap:
+    image: postgres:17-alpine
+    container_name: n8n-staging-db-setup
     depends_on:
       n8n:
         condition: service_healthy
+    volumes:
+      - ./bootstrap/setup-n8n.sql:/scripts/setup-n8n.sql:ro
+    tmpfs:
+      - /var/lib/postgresql/data:mode=0700
+    environment:
+      - PGPASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - ADMIN_EMAIL=${N8N_ADMIN_EMAIL:-admin@cloudops.com}
+      - ADMIN_PASSWORD=${N8N_ADMIN_PASSWORD}
+    command: >
+      sh -c "psql \"host=${DB_POSTGRESDB_HOST} user=${DB_POSTGRESDB_USER} dbname=${DB_POSTGRESDB_DATABASE} sslmode=require\" 
+      -v admin_email=\"$$ADMIN_EMAIL\" 
+      -v admin_password=\"$$ADMIN_PASSWORD\" 
+      -f /scripts/setup-n8n.sql"
     restart: "no"
 volumes:
   n8n_data:
