@@ -63,11 +63,11 @@ services:
     environment:
       - PGPASSWORD=${PGPASSWORD}
       - ADMIN_EMAIL=${N8N_ADMIN_EMAIL:-admin@cloudops.com}
-      - ADMIN_HASH=${N8N_ADMIN_PASSWORD_HASH} 
+      - ADMIN_PASSWORD=${N8N_ADMIN_PASSWORD} 
     command: >
       sh -c "psql -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} 
       -v admin_email=\"$$ADMIN_EMAIL\" 
-      -v admin_hash=\"$$ADMIN_HASH\" 
+      -v admin_password=\"$$ADMIN_PASSWORD\"
       -f /scripts/setup-n8n.sql"
     restart: "no"
 volumes:
