@@ -30,8 +30,24 @@ provider "google-beta" {
 # ============================================================================
 # NEON PROVIDER CONFIGURATION
 # ============================================================================
-# Used to fetch connection strings from your existing Neon database
+# Manages Neon database projects and resources
+# org_id is set via environment variable NEON_ORG_ID
 
 provider "neon" {
   api_key = var.neon_api_key
+}
+
+# ============================================================================
+# POSTGRESQL PROVIDER CONFIGURATION
+# ============================================================================
+# Manages PostgreSQL database objects (tables, schemas, etc.)
+
+provider "postgresql" {
+  host            = neon_project.main.database_host
+  port            = 5432
+  database        = neon_database.n8n_db.name
+  username        = neon_role.n8n_user.name
+  password        = neon_role.n8n_user.password
+  sslmode         = "require"
+  connect_timeout = 15
 }

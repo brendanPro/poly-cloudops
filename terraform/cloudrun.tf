@@ -244,7 +244,11 @@ resource "google_cloud_run_v2_service" "n8n" {
   depends_on = [
     google_project_service.required_apis,
     google_service_account.cloudrun_sa,
-    google_secret_manager_secret_iam_member.n8n_db_secret_access, # Fixed reference to database.tf
+    google_secret_manager_secret_iam_member.db_connection_string_access,
+    google_secret_manager_secret_iam_member.db_host_access,
+    google_secret_manager_secret_iam_member.db_user_access,
+    google_secret_manager_secret_iam_member.db_password_access,
+    google_secret_manager_secret_iam_member.db_database_access,
     google_artifact_registry_repository.n8n_repo,
   ]
 }

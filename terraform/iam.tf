@@ -19,16 +19,12 @@ resource "google_service_account" "cloudrun_sa" {
 # IAM ROLE BINDINGS FOR CLOUD RUN SERVICE ACCOUNT
 # ============================================================================
 
-# Grant access to Secret Manager secrets
+# Grant access to Secret Manager secrets (n8n encryption key and DeepL API key)
+# Note: Database secrets are managed in database.tf with their own IAM permissions
 resource "google_secret_manager_secret_iam_member" "cloudrun_sa_secret_accessor" {
   for_each = toset([
     var.secret_n8n_encryption_key,
-    var.secret_db_connection_string,
     var.secret_deepl_api_key,
-    "db-host",
-    "db-password",
-    "db-database",
-    "db-user",
   ])
 
   project   = var.project_id

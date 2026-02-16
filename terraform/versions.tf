@@ -14,10 +14,22 @@ terraform {
       version = "~> 6.0" 
     }
 
-    # Neon provider for database management (fetching existing project data)
+    # Neon provider for database management
     neon = {
       source  = "kislerdm/neon"
-      version = "~> 0.2.0"
+      version = "~> 0.4"
+    }
+
+    # PostgreSQL provider for managing database schema
+    postgresql = {
+      source  = "cyrilgdn/postgresql"
+      version = "~> 1.23"
+    }
+
+    # Null provider for running provisioners
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
 
     # Random provider for generating unique IDs
@@ -26,4 +38,4 @@ terraform {
       version = "~> 3.6"
     }
   }
-} 
+}

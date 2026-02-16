@@ -139,6 +139,19 @@ variable "n8n_executions_process" {
   default     = "main"
 }
 
+variable "n8n_admin_email" {
+  description = "Email address for n8n admin user"
+  type        = string
+  default     = "admin@cloudops.com"
+  sensitive   = false
+}
+
+variable "n8n_admin_password" {
+  description = "Password for n8n admin user"
+  type        = string
+  sensitive   = true
+}
+
 # ============================================================================
 # SECRET MANAGER CONFIGURATION
 # ============================================================================
@@ -162,12 +175,14 @@ variable "secret_deepl_api_key" {
 }
 
 variable "neon_api_key" {
-  type      = string
-  sensitive = true
+  description = "Neon API key for managing database resources"
+  type        = string
+  sensitive   = true
 }
 
-variable "neon_project_id" {
-  type = string
+variable "neon_org_id" {
+  description = "Neon organization ID (found in https://console.neon.tech/app/settings/organizations)"
+  type        = string
 }
 
 # ============================================================================
