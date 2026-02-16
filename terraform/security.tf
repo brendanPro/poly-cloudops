@@ -3,6 +3,7 @@
 # ============================================================================
 # This file references secrets that must be created manually in GCP Secret Manager
 # before running terraform apply.
+# Note: Database secrets are now managed automatically in database.tf
 # ============================================================================
 
 # ============================================================================
@@ -13,16 +14,6 @@
 data "google_secret_manager_secret" "n8n_encryption_key" {
   project   = var.project_id
   secret_id = var.secret_n8n_encryption_key
-
-  depends_on = [
-    google_project_service.required_apis
-  ]
-}
-
-# Reference to database connection string secret (must exist)
-data "google_secret_manager_secret" "db_connection_string" {
-  project   = var.project_id
-  secret_id = var.secret_db_connection_string
 
   depends_on = [
     google_project_service.required_apis
@@ -42,7 +33,8 @@ data "google_secret_manager_secret" "deepl_api_key" {
 # ============================================================================
 # NOTES
 # ============================================================================
-# - Secrets must be created manually before running terraform apply
-# - The Cloud Run service account needs secretAccessor role (granted in iam.tf)
+# - n8n_encryption_key and deepl_api_key must be created manually before terraform apply
+# - Database secrets are automatically created and managed by Terraform (see database.tf)
+# - The Cloud Run service account needs secretAccessor role (granted in iam.tf and database.tf)
 # - Secrets are mounted as environment variables in Cloud Run (see cloudrun.tf)
-# - Cloud Run references secrets directly by secret_id, no need to read values here
+

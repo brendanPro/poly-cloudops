@@ -84,10 +84,10 @@ output "secret_names" {
     encryption_key       = data.google_secret_manager_secret.n8n_encryption_key.secret_id
     db_connection_string = data.google_secret_manager_secret.db_connection_string.secret_id
     deepl_api_key        = data.google_secret_manager_secret.deepl_api_key.secret_id
-    db_host              = "db-host"              # Database hostname (Neon pooler endpoint)
-    db_password          = "db-password"          # Database password (masked in Secret Manager)
-    db_database          = "db-database"          # Database name
-    db_user              = "db-user"              # Database user
+    db_host              = data.google_secret_manager_secret.db_host.secret_id
+    db_password          = data.google_secret_manager_secret.db_password.secret_id
+    db_database          = data.google_secret_manager_secret.db_database.secret_id
+    db_user              = data.google_secret_manager_secret.db_user.secret_id
   }
 }
 
@@ -118,4 +118,53 @@ output "project_info" {
     region         = var.region
     environment    = var.environment
   }
+}
+
+# ============================================================================
+# NEON DATABASE OUTPUTS
+# ============================================================================
+
+output "neon_project_id" {
+  description = "The ID of the Neon project created by Terraform"
+  value       = neon_project.main.id
+}
+
+output "neon_project_name" {
+  description = "The name of the Neon project"
+  value       = neon_project.main.name
+}
+
+output "neon_database_name" {
+  description = "The name of the database created for n8n"
+  value       = neon_database.n8n_db.name
+}
+
+output "neon_database_host" {
+  description = "The hostname of the Neon database endpoint (automatic)"
+  value       = neon_project.main.database_host
+  sensitive   = true
+}
+
+output "neon_database_user" {
+  description = "The database user for n8n"
+  value       = neon_role.n8n_user.name
+  sensitive   = true
+}
+
+output "neon_console_url" {
+  description = "URL to access the Neon console for this project"
+  value       = "https://console.neon.tech/app/projects/${neon_project.main.id}"
+}
+
+output "database_connection_info" {
+  description = "Database connection information (credentials stored in Secret Manager)"
+  value = {
+    project_id         = neon_project.main.id
+    database_name      = neon_database.n8n_db.name
+    endpoint_host      = neon_project.main.database_host
+    endpoint_host_pool = neon_project.main.database_host_pooler
+    postgres_version   = neon_project.main.pg_version
+    note               = "Full connection string and credentials are stored in Google Secret Manager"
+  }
+  sensitive = true
 }

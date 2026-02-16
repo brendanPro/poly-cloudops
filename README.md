@@ -181,6 +181,14 @@ By completing this project, students will acquire:
 
 7. **Follow the phase-by-phase work breakdown above**
 
+### Terraform Notes
+
+- Neon is managed by Terraform (project, database, and users).
+- Only two secrets must exist before running Terraform: `n8n-encryption-key` and `deepl-api-key`.
+- Database secrets (`db-host`, `db-user`, `db-password`, `db-database`, and `n8n-db-connection-string`) are created by Terraform.
+- Admin bootstrap and translations table setup run via Docker during `terraform apply`.
+- More details are in [terraform/README.md](terraform/README.md).
+
 ### Staging Environment (Neon & Automation)
 
 To test the project in an environment close to production, we use Neon PostgreSQL as a managed database.
