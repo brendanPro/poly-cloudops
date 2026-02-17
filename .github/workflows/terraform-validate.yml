@@ -1,0 +1,142 @@
+name: Terraform Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-validate.yml'
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:  # Allow manual triggers
+
+# Required for Workload Identity Federation
+permissions:
+  contents: read        # Read repository contents
+  id-token: write      # Create OIDC tokens for GCP authentication
+  pull-requests: write # Post comments on PRs
+
+jobs:
+  terraform-validate:
+    name: Validate Terraform Configuration
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    
+    steps:
+      # ============================================================================
+      # CHECKOUT CODE
+      # ============================================================================
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # ============================================================================
+      # AUTHENTICATE WITH GCP (WORKLOAD IDENTITY FEDERATION)
+      # ============================================================================
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          access_token_lifetime: '600s'  # 10 minutes (enough for plan)
+      
+      # ============================================================================
+      # SETUP TERRAFORM
+      # ============================================================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.0"
+          terraform_wrapper: true  # Enables capturing outputs
+      
+      # ============================================================================
+      # TERRAFORM FORMAT CHECK
+      # ============================================================================
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true  # Don't stop workflow, but mark as failed
+      
+      # ============================================================================
+      # TERRAFORM INIT (WITH REMOTE STATE BACKEND)
+      # ============================================================================
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        env:
+          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+      
+      # ============================================================================
+      # TERRAFORM VALIDATE
+      # ============================================================================
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+      
+      # ============================================================================
+      # TERRAFORM PLAN (STATE-AWARE WITH REMOTE BACKEND)
+      # ============================================================================
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -input=false
+        env:
+          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+          TF_VAR_n8n_admin_password: "dummy"
+          TF_VAR_neon_api_key: "dummy"
+          TF_VAR_neon_org_id: "dummy"
+        continue-on-error: true
+      
+      # ============================================================================
+      # POST PLAN RESULTS AS PR COMMENT
+      # ============================================================================
+      - name: Comment PR with Terraform Plan
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "${{ steps.plan.outputs.stdout }}"
+          FMT_OUTCOME: "${{ steps.fmt.outcome }}"
+          INIT_OUTCOME: "${{ steps.init.outcome }}"
+          VALIDATE_OUTCOME: "${{ steps.validate.outcome }}"
+          PLAN_OUTCOME: "${{ steps.plan.outcome }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌️ \`${process.env.FMT_OUTCOME}\`
+            #### Terraform Initialization ⚙️ \`${process.env.INIT_OUTCOME}\`
+            #### Terraform Validation 🤖 \`${process.env.VALIDATE_OUTCOME}\`
+            #### Terraform Plan 📖 \`${process.env.PLAN_OUTCOME}\`
+            
+            <details><summary>Show Plan Output</summary>
+            
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+            
+            </details>
+            
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+      
+      # ============================================================================
+      # FAIL WORKFLOW IF ANY STEP FAILED
+      # ============================================================================
+      - name: Check Validation Results
+        if: steps.fmt.outcome == 'failure' || steps.validate.outcome == 'failure' || steps.plan.outcome == 'failure'
+        run: |
+          echo "::error::Terraform validation failed. Please fix the errors above."
+          exit 1

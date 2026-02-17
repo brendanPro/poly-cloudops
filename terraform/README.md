@@ -76,3 +76,80 @@ Notes:
 - The admin bootstrap runs after Cloud Run deploys and waits for n8n to initialize its tables.
 - SQL scripts used by Terraform live in `terraform/scripts/` and `bootstrap/`.
 
+---
+
+## CI/CD Workflows
+
+This infrastructure uses GitHub Actions for automated validation and deployment.
+
+### GitHub Actions Workflow
+
+**Workflow File**: `.github/workflows/terraform-validate.yml`
+
+**Triggers**:
+- Pull requests targeting `main` or `master` branches
+- Pushes to `main` or `master` branches (when terraform files change)
+- Manual workflow dispatch
+
+**Workflow Steps**:
+1. **Terraform Format Check**: Validates code formatting (`terraform fmt -check`)
+2. **Terraform Init**: Initializes providers with remote GCS state backend
+3. **Terraform Validate**: Checks syntax and configuration validity
+4. **Terraform Plan**: Generates execution plan with state-aware diffs
+5. **PR Comment**: Posts plan output as a comment on pull requests
+
+**Authentication**:
+- Uses **Workload Identity Federation (WIF)** for keyless GCP authentication
+- No JSON service account keys required
+- OIDC-based authentication via GitHub Actions
+
+### Workload Identity Federation Setup
+
+**WIF Provider** (already created via Terraform):
+- Pool: `github-actions-pool`
+- Provider: `github-provider`
+- Restricted to repository: `brendanPro/poly-cloudops`
+
+**GitHub Repository Secrets** (already configured):
+- `GCP_PROJECT_ID`: `polycloudops`
+- `GCP_WIF_PROVIDER`: Full WIF provider resource name
+- `GCP_SERVICE_ACCOUNT`: `terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com`
+
+**IAM Binding** (requires project owner):
+
+The terraform service account needs the `roles/iam.workloadIdentityUser` binding. If this fails in Terraform, the project owner must run:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com \
+  --member="principalSet://iam.googleapis.com/projects/GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/brendanPro/poly-cloudops" \
+  --role="roles/iam.workloadIdentityUser"
+```
+
+### Testing Workflows
+
+**View workflow runs**:
+- GitHub → Actions tab → Terraform Validation
+
+**Trigger manually**:
+- GitHub → Actions → Terraform Validation → Run workflow
+
+**Check PR comments**:
+- Terraform plan output appears automatically on pull requests
+
+**Verify authentication**:
+- Check workflow logs to ensure WIF authentication succeeds
+- No credentials or tokens should appear in logs
+
+### Current Workflow Status
+
+✅ **Validation-only** (no deployments):
+- `terraform fmt` - Format checking
+- `terraform validate` - Syntax validation
+- `terraform plan` - State-aware planning
+
+❌ **Not yet implemented**:
+- `terraform apply` - Automated deployments
+- Docker build/push - Container image building
+- Dagger.io integration - CI/CD workflow composition
+
+---

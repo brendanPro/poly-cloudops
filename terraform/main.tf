@@ -54,23 +54,26 @@ resource "google_iam_workload_identity_pool" "github_pool" {
 }
 
 # ============================================================================
-# TEMPORARY: Commented out - needs proper GitHub Actions OIDC configuration
+# WORKLOAD IDENTITY FEDERATION PROVIDER FOR GITHUB ACTIONS
 # ============================================================================
-# resource "google_iam_workload_identity_pool_provider" "github_provider" {
-#   workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
-#   workload_identity_pool_provider_id = "github-provider"
-#   attribute_mapping = {
-#     "google.subject"       = "assertion.sub"
-#     "attribute.repository" = "assertion.repository"
-#     "attribute.actor"      = "assertion.actor"
-#   }
-#   oidc {
-#     issuer_uri = "https://token.actions.githubusercontent.com"
-#   }
-# }
+# Enables keyless authentication for GitHub Actions via OIDC
+resource "google_iam_workload_identity_pool_provider" "github_provider" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.repository" = "assertion.repository"
+    "attribute.actor"      = "assertion.actor"
+  }
+  attribute_condition = "assertion.repository == 'brendanPro/poly-cloudops'"
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
 
-# resource "google_service_account_iam_member" "wif_binding" {
-#   service_account_id = "projects/polycloudops/serviceAccounts/terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com"
-#   role               = "roles/iam.workloadIdentityUser"
-#   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/brendanPro/poly-cloudops"
-# }
+# Allow GitHub Actions from this repository to impersonate the terraform service account
+resource "google_service_account_iam_member" "wif_binding" {
+  service_account_id = "projects/polycloudops/serviceAccounts/terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com"
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/brendanPro/poly-cloudops"
+}
