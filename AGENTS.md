@@ -31,6 +31,42 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 
 **Note:** Git hooks are automatically installed via Husky when running `bun install`. The `prepare` script in package.json ensures hooks are set up for all developers automatically.
 
+### GitHub Actions Setup
+
+**Configuring Workload Identity Federation** (for CI/CD authentication):
+
+This project uses Workload Identity Federation (WIF) for keyless authentication to Google Cloud from GitHub Actions. The WIF provider and GitHub secrets are already configured.
+
+**If you need to reconfigure or troubleshoot:**
+
+1. **WIF Provider** (already created):
+   - Created via Terraform in `terraform/main.tf`
+   - Run `terraform output wif_provider_name` to see the provider resource name
+
+2. **GitHub Repository Secrets** (already configured):
+   - Navigate to: https://github.com/brendanPro/poly-cloudops/settings/secrets/actions
+   - Required secrets:
+     - `GCP_PROJECT_ID`: `polycloudops`
+     - `GCP_WIF_PROVIDER`: Full WIF provider name (from terraform output)
+     - `GCP_SERVICE_ACCOUNT`: `terraform-sa@polycloudops.iam.gserviceaccount.com`
+
+3. **IAM Binding** (requires project owner):
+   - The terraform-sa service account needs the `roles/iam.workloadIdentityUser` binding
+   - If the Terraform resource `google_service_account_iam_member.wif_binding` fails to apply:
+   ```bash
+   # Run this command as project owner (samuel.figueira0906@gmail.com):
+   gcloud iam service-accounts add-iam-policy-binding terraform-sa@polycloudops.iam.gserviceaccount.com \
+     --member="principalSet://iam.googleapis.com/projects/173389596894/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/brendanPro/poly-cloudops" \
+     --role="roles/iam.workloadIdentityUser"
+   ```
+
+4. **Verify Workflow Permissions**:
+   - Repository Settings → Actions → General → Workflow permissions
+   - Should be set to "Read and write permissions"
+
+**Workflow Files**:
+- `.github/workflows/terraform-validate.yml` - Terraform validation and planning
+
 ## Build and Test Commands
 
 ### Terraform Commands
@@ -63,6 +99,10 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Test Dagger workflows locally before pushing: `dagger do <workflow-name>`
 - Test GitHub Actions workflows locally: `act` (optional, requires Docker)
 - Validate workflow syntax: Check `.github/workflows/*.yml` files
+- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
+- View workflow runs: GitHub → Actions tab
+- Check PR comments: Terraform plan output appears automatically on PRs
+- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
 - Always test workflows in a branch before merging to main
 - Use Dagger for consistent local and CI execution
 
@@ -161,6 +201,10 @@ Branch names must follow conventional commit types for consistency:
 
 - Test Dagger workflows locally: `dagger do <workflow-name>` before pushing
 - Test GitHub Actions workflows on feature branches
+- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
+- View workflow runs: GitHub → Actions tab
+- Check PR comments: Terraform plan output appears automatically on PRs
+- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
 - Verify Docker image builds successfully via Dagger
 - Ensure Terraform plans execute without errors
 - Check that deployments update Cloud Run/App Runner correctly

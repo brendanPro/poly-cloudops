@@ -168,3 +168,26 @@ output "database_connection_info" {
   }
   sensitive = true
 }
+
+# ============================================================================
+# WORKLOAD IDENTITY FEDERATION OUTPUTS
+# ============================================================================
+
+output "wif_provider_name" {
+  description = "The full resource name of the WIF provider for GitHub Actions"
+  value       = google_iam_workload_identity_pool_provider.github_provider.name
+}
+
+output "wif_service_account" {
+  description = "Service account email for GitHub Actions to impersonate"
+  value       = "terraform-sa@polycloudops.iam.gserviceaccount.com"
+}
+
+output "github_secrets_config" {
+  description = "GitHub repository secrets configuration for CI/CD"
+  value = {
+    GCP_PROJECT_ID      = var.project_id
+    GCP_WIF_PROVIDER    = google_iam_workload_identity_pool_provider.github_provider.name
+    GCP_SERVICE_ACCOUNT = "terraform-sa@polycloudops.iam.gserviceaccount.com"
+  }
+}
