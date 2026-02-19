@@ -189,6 +189,11 @@ By completing this project, students will acquire:
 - Admin bootstrap and translations table setup run via Docker during `terraform apply`.
 - More details are in [terraform/README.md](terraform/README.md).
 
+### GitHub Actions (Terraform)
+
+- The workflow in `.github/workflows/terraform-validate.yml` runs `terraform fmt`, `init`, `validate`, and `plan` on PRs and on push to `main` (only when `terraform/**` changes).
+- Deploy (`terraform apply`) runs only on push to `main` and requires manual approval via the GitHub Environment named `production`.
+
 ### Staging Environment (Neon & Automation)
 
 To test the project in an environment close to production, we use Neon PostgreSQL as a managed database.

@@ -1,17 +1,15 @@
-name: Terraform Validation
+name: Terraform CI/CD Pipeline
 
 on:
   pull_request:
     branches:
       - main
-      - master
     paths:
       - 'terraform/**'
       - '.github/workflows/terraform-validate.yml'
   push:
     branches:
       - main
-      - master
     paths:
       - 'terraform/**'
   workflow_dispatch:  # Allow manual triggers
@@ -140,3 +138,80 @@ jobs:
         run: |
           echo "::error::Terraform validation failed. Please fix the errors above."
           exit 1
+  
+  # ==============================================================================
+  # JOB 2: DEPLOY TO PRODUCTION (MANUAL APPROVAL)
+  # ==============================================================================
+  terraform-deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: terraform-validate  # Runs only if validation succeeds
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'  # Only on merge to main
+    environment: production  # Requires manual approval
+    defaults:
+      run:
+        working-directory: terraform
+    
+    steps:
+      # ============================================================================
+      # CHECKOUT CODE
+      # ============================================================================
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      # ============================================================================
+      # AUTHENTICATE WITH GCP (WORKLOAD IDENTITY FEDERATION)
+      # ============================================================================
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          access_token_lifetime: '1200s'  # 20 minutes (enough for apply)
+      
+      # ============================================================================
+      # SETUP TERRAFORM
+      # ============================================================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.0"
+          terraform_wrapper: false  # Disable wrapper for cleaner output
+      
+      # ============================================================================
+      # TERRAFORM INIT
+      # ============================================================================
+      - name: Terraform Init
+        run: terraform init
+        env:
+          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+      
+      # ============================================================================
+      # TERRAFORM APPLY - THE ACTUAL DEPLOYMENT
+      # ============================================================================
+      - name: Terraform Apply
+        run: |
+          echo "::warning::Deploying infrastructure to GCP..."
+          terraform apply -auto-approve -input=false
+          echo "::notice::Deployment completed successfully."
+        env:
+          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+          TF_VAR_n8n_admin_password: ${{ secrets.N8N_ADMIN_PASSWORD }}
+          TF_VAR_neon_api_key: ${{ secrets.NEON_API_KEY }}
+          TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
+      
+      # ============================================================================
+      # POST-DEPLOYMENT SUMMARY
+      # ============================================================================
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "::notice::============================================"
+          echo "::notice::✅ DEPLOYMENT SUCCESSFUL"
+          echo "::notice::============================================"
+          echo "::notice::Deployed by: ${{ github.actor }}"
+          echo "::notice::Commit: ${{ github.sha }}"
+          echo "::notice::============================================"
+          terraform output
