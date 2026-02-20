@@ -88,9 +88,9 @@ jobs:
         run: terraform plan -no-color -input=false
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          TF_VAR_n8n_admin_password: "dummy"
-          TF_VAR_neon_api_key: "dummy"
-          TF_VAR_neon_org_id: "dummy"
+          TF_VAR_n8n_admin_password: ${{ secrets.N8N_ADMIN_PASSWORD }}
+          TF_VAR_neon_api_key: ${{ secrets.NEON_API_KEY }}
+          TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
         continue-on-error: true
       
       # ============================================================================
