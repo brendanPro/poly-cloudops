@@ -71,7 +71,7 @@ jobs:
         id: init
         run: terraform init
         env:
-          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
       
       # ============================================================================
       # TERRAFORM VALIDATE
@@ -87,7 +87,7 @@ jobs:
         id: plan
         run: terraform plan -no-color -input=false
         env:
-          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           TF_VAR_n8n_admin_password: "dummy"
           TF_VAR_neon_api_key: "dummy"
           TF_VAR_neon_org_id: "dummy"
@@ -186,7 +186,7 @@ jobs:
       - name: Terraform Init
         run: terraform init
         env:
-          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
       
       # ============================================================================
       # TERRAFORM APPLY - THE ACTUAL DEPLOYMENT
@@ -197,7 +197,7 @@ jobs:
           terraform apply -auto-approve -input=false
           echo "::notice::Deployment completed successfully."
         env:
-          GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           TF_VAR_n8n_admin_password: ${{ secrets.N8N_ADMIN_PASSWORD }}
           TF_VAR_neon_api_key: ${{ secrets.NEON_API_KEY }}
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
