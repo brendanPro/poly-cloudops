@@ -7,8 +7,8 @@ resource "google_cloud_run_v2_service" "n8n" {
   project             = var.project_id
   name                = var.cloudrun_service_name
   location            = var.region
-  ingress             = "INGRESS_TRAFFIC_ALL" 
-  deletion_protection = false 
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
   labels = merge(
     local.common_labels,
@@ -37,7 +37,7 @@ resource "google_cloud_run_v2_service" "n8n" {
           memory = var.cloudrun_memory
         }
         cpu_idle          = var.cloudrun_cpu_throttling
-        startup_cpu_boost = true 
+        startup_cpu_boost = true
       }
 
       ports {
@@ -74,7 +74,7 @@ resource "google_cloud_run_v2_service" "n8n" {
       }
 
       env {
-        name  = "DB_POSTGRESDB_HOST"
+        name = "DB_POSTGRESDB_HOST"
         value_source {
           secret_key_ref {
             secret  = "db-host"
@@ -89,7 +89,7 @@ resource "google_cloud_run_v2_service" "n8n" {
       }
 
       env {
-        name  = "DB_POSTGRESDB_DATABASE"
+        name = "DB_POSTGRESDB_DATABASE"
         value_source {
           secret_key_ref {
             secret  = "db-database"
@@ -99,7 +99,7 @@ resource "google_cloud_run_v2_service" "n8n" {
       }
 
       env {
-        name  = "DB_POSTGRESDB_USER"  
+        name = "DB_POSTGRESDB_USER"
         value_source {
           secret_key_ref {
             secret  = "db-user"
@@ -109,7 +109,7 @@ resource "google_cloud_run_v2_service" "n8n" {
       }
 
       env {
-        name  = "DB_POSTGRESDB_PASSWORD"
+        name = "DB_POSTGRESDB_PASSWORD"
         value_source {
           secret_key_ref {
             secret  = "db-password"
