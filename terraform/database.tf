@@ -8,9 +8,9 @@
 # NEON PROJECT
 # ============================================================================
 resource "neon_project" "main" {
-  name                           = "poly-cloudops-${var.environment}"
-  org_id                         = var.neon_org_id
-  history_retention_seconds      = 21600  # 6 hours (maximum allowed by Neon)
+  name                      = "poly-cloudops-${var.environment}"
+  org_id                    = var.neon_org_id
+  history_retention_seconds = 21600 # 6 hours (maximum allowed by Neon)
 
   lifecycle {
     prevent_destroy = true # Prevent accidental deletion of the database
@@ -53,13 +53,13 @@ resource "neon_role" "n8n_user" {
 locals {
   # Use the default endpoint created by Neon
   db_host_endpoint = neon_project.main.database_host_pooler
-  
+
   # Connection string using connection pooler (recommended for serverless)
   db_connection_string_pooler = "postgresql://${neon_role.n8n_user.name}:${neon_role.n8n_user.password}@${local.db_host_endpoint}/${neon_database.n8n_db.name}?sslmode=require"
-  
+
   # Direct connection string (without pooler)
   db_connection_string_direct = "postgresql://${neon_role.n8n_user.name}:${neon_role.n8n_user.password}@${neon_project.main.database_host}/${neon_database.n8n_db.name}?sslmode=require"
-  
+
   # Parse connection string components
   db_host     = neon_project.main.database_host
   db_user     = neon_role.n8n_user.name
@@ -196,9 +196,9 @@ resource "null_resource" "create_translations_table" {
 
   triggers = {
     # Re-run if connection string or script changes
-    db_host = neon_project.main.database_host
-    db_name = neon_database.n8n_db.name
-    db_user = neon_role.n8n_user.name
+    db_host     = neon_project.main.database_host
+    db_name     = neon_database.n8n_db.name
+    db_user     = neon_role.n8n_user.name
     script_hash = filemd5("${path.module}/scripts/setup-translations-table.sql")
   }
 }
@@ -220,8 +220,8 @@ resource "null_resource" "bootstrap_n8n" {
   ]
 
   triggers = {
-    db_host = neon_project.main.database_host
-    db_name = neon_database.n8n_db.name
+    db_host     = neon_project.main.database_host
+    db_name     = neon_database.n8n_db.name
     script_hash = filemd5("${path.module}/../bootstrap/setup-n8n.sql")
     admin_email = var.n8n_admin_email
   }

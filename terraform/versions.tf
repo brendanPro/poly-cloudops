@@ -11,7 +11,7 @@ terraform {
     # Google Cloud Platform provider
     google = {
       source  = "hashicorp/google"
-      version = "~> 6.0" 
+      version = "~> 6.0"
     }
 
     # Neon provider for database management
