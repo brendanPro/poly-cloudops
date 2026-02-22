@@ -1,0 +1,117 @@
+.container {
+    min-height: 100vh;
+    background-color: #0a1628;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    background-color: #0f1f3a;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    height: 50px;
+    width: auto;
+    max-width: 200px;
+}
+
+.content {
+    flex: 1;
+    padding: 2rem;
+    color: #e0e7ff;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #e0e7ff;
+    margin-bottom: 1rem;
+}
+
+.description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #a5b4d1;
+}
+
+/* Translation page additions */
+.container {
+    padding: 24px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.controlsRow {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.select {
+    padding: 6px 8px;
+    font-size: 14px;
+}
+
+.actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.button {
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgb(111, 12, 12);
+    cursor: pointer;
+}
+
+.buttonPrimary {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    background: rgb(111, 12, 12);
+    cursor: pointer;
+}
+
+.textareas {
+    display: flex;
+    gap: 12px;
+}
+
+.textarea {
+    flex: 1;
+    min-height: 220px;
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.textareaTranslated {
+    flex: 1;
+    min-height: 220px;
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    background: #0a1628;
+}
+
+.error {
+    margin-top: 12px;
+    color: #a00;
+}
