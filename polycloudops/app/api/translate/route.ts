@@ -13,7 +13,11 @@ export async function POST(request: Request) {
     
     if (!text) return NextResponse.json({ translatedText: "" });
 
-    const deepLKey = process.env.DEEPL_API_KEY; 
+    const deepLKey = process.env.deepl;
+    if (!deepLKey) {
+      console.error("[API] Missing DeepL key");
+      return NextResponse.json({ error: "Server configuration error: missing DeepL key" }, { status: 500 });
+    }
 
     // Build payload for n8n webhook
     const payload: Record<string, any> = {
@@ -46,7 +50,8 @@ export async function POST(request: Request) {
     //console.log("[API] Translated text:", translatedText);
     
     return NextResponse.json({ translatedText });
-  } catch (err: any) {
+  } 
+  catch (err: any) {
     console.error("[API] Error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
