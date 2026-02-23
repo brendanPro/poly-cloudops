@@ -4,14 +4,23 @@ on:
   pull_request:
     branches:
       - main
+      - develop
     paths:
       - 'terraform/**'
       - '.github/workflows/terraform-validate.yml'
+      - 'src/**'
+      - 'dagger.json'
+      - 'tsconfig.json'
+      - 'package.json'
   push:
     branches:
       - main
     paths:
       - 'terraform/**'
+      - 'src/**'
+      - 'dagger.json'
+      - 'tsconfig.json'
+      - 'package.json'
   workflow_dispatch:  # Allow manual triggers
 
 # Required for Workload Identity Federation
@@ -24,9 +33,6 @@ jobs:
   terraform-validate:
     name: Validate Terraform Configuration
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: terraform
     
     steps:
       # ============================================================================
@@ -48,49 +54,44 @@ jobs:
           access_token_lifetime: '600s'  # 10 minutes (enough for plan)
       
       # ============================================================================
-      # SETUP TERRAFORM
+      # SETUP DAGGER
       # ============================================================================
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~> 1.0"
-          terraform_wrapper: true  # Enables capturing outputs
+      - name: Setup Dagger
+        uses: dagger/dagger-action@v4
       
       # ============================================================================
-      # TERRAFORM FORMAT CHECK
+      # DAGGER VALIDATE
       # ============================================================================
-      - name: Terraform Format Check
-        id: fmt
-        run: terraform fmt -check -recursive
-        continue-on-error: true  # Don't stop workflow, but mark as failed
-      
-      # ============================================================================
-      # TERRAFORM INIT (WITH REMOTE STATE BACKEND)
-      # ============================================================================
-      - name: Terraform Init
-        id: init
-        run: terraform init
-        env:
-          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-      
-      # ============================================================================
-      # TERRAFORM VALIDATE
-      # ============================================================================
-      - name: Terraform Validate
+      - name: Dagger Validate
         id: validate
-        run: terraform validate -no-color
-      
-      # ============================================================================
-      # TERRAFORM PLAN (STATE-AWARE WITH REMOTE BACKEND)
-      # ============================================================================
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color -input=false
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          TF_VAR_n8n_admin_password: ${{ secrets.N8N_ADMIN_PASSWORD }}
-          TF_VAR_neon_api_key: ${{ secrets.NEON_API_KEY }}
-          TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
+        run: |
+          dagger call validate \
+            --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+            --progress=plain
+      
+      # ============================================================================
+      # DAGGER PLAN
+      # ============================================================================
+      - name: Dagger Plan
+        id: plan
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          N8N_ADMIN_PASSWORD: ${{ secrets.N8N_ADMIN_PASSWORD }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_ORG_ID: ${{ secrets.NEON_ORG_ID }}
+        run: |
+          PLAN_OUTPUT="$(dagger call plan \
+            --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+            --n8n-admin-password env:N8N_ADMIN_PASSWORD \
+            --neon-api-key env:NEON_API_KEY \
+            --neon-org-id env:NEON_ORG_ID)"
+          {
+            echo "stdout<<EOF"
+            echo "$PLAN_OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       
       # ============================================================================
       # POST PLAN RESULTS AS PR COMMENT
@@ -100,17 +101,13 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           PLAN: "${{ steps.plan.outputs.stdout }}"
-          FMT_OUTCOME: "${{ steps.fmt.outcome }}"
-          INIT_OUTCOME: "${{ steps.init.outcome }}"
           VALIDATE_OUTCOME: "${{ steps.validate.outcome }}"
           PLAN_OUTCOME: "${{ steps.plan.outcome }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Terraform Format and Style 🖌️ \`${process.env.FMT_OUTCOME}\`
-            #### Terraform Initialization ⚙️ \`${process.env.INIT_OUTCOME}\`
-            #### Terraform Validation 🤖 \`${process.env.VALIDATE_OUTCOME}\`
-            #### Terraform Plan 📖 \`${process.env.PLAN_OUTCOME}\`
+            const output = `#### Dagger Validate 🤖 \`${process.env.VALIDATE_OUTCOME}\`
+            #### Dagger Plan 📖 \`${process.env.PLAN_OUTCOME}\`
             
             <details><summary>Show Plan Output</summary>
             
@@ -128,15 +125,6 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-      
-      # ============================================================================
-      # FAIL WORKFLOW IF ANY STEP FAILED
-      # ============================================================================
-      - name: Check Validation Results
-        if: steps.fmt.outcome == 'failure' || steps.validate.outcome == 'failure'
-        run: |
-          echo "::error::Terraform validation failed. Please fix the errors above."
-          exit 1
   
   # ==============================================================================
   # JOB 2: DEPLOY TO PRODUCTION (MANUAL APPROVAL)
@@ -147,9 +135,6 @@ jobs:
     needs: terraform-validate  # Runs only if validation succeeds
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'  # Only on merge to main
     environment: production  # Requires manual approval
-    defaults:
-      run:
-        working-directory: terraform
     
     steps:
       # ============================================================================
@@ -171,35 +156,30 @@ jobs:
           access_token_lifetime: '1200s'  # 20 minutes (enough for apply)
       
       # ============================================================================
-      # SETUP TERRAFORM
+      # SETUP DAGGER
       # ============================================================================
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~> 1.0"
-          terraform_wrapper: false  # Disable wrapper for cleaner output
+      - name: Setup Dagger
+        uses: dagger/dagger-action@v4
       
       # ============================================================================
-      # TERRAFORM INIT
+      # DAGGER APPLY - THE ACTUAL DEPLOYMENT
       # ============================================================================
-      - name: Terraform Init
-        run: terraform init
-        env:
-          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-      
-      # ============================================================================
-      # TERRAFORM APPLY - THE ACTUAL DEPLOYMENT
-      # ============================================================================
-      - name: Terraform Apply
+      - name: Dagger Apply
         run: |
           echo "::warning::Deploying infrastructure to GCP..."
-          terraform apply -auto-approve -input=false
+          dagger call apply \
+            --branch main \
+            --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+            --n8n-admin-password env:N8N_ADMIN_PASSWORD \
+            --neon-api-key env:NEON_API_KEY \
+            --neon-org-id env:NEON_ORG_ID \
+            --progress=plain
           echo "::notice::Deployment completed successfully."
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          TF_VAR_n8n_admin_password: ${{ secrets.N8N_ADMIN_PASSWORD }}
-          TF_VAR_neon_api_key: ${{ secrets.NEON_API_KEY }}
-          TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
+          N8N_ADMIN_PASSWORD: ${{ secrets.N8N_ADMIN_PASSWORD }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_ORG_ID: ${{ secrets.NEON_ORG_ID }}
       
       # ============================================================================
       # POST-DEPLOYMENT SUMMARY
@@ -213,4 +193,4 @@ jobs:
           echo "::notice::Deployed by: ${{ github.actor }}"
           echo "::notice::Commit: ${{ github.sha }}"
           echo "::notice::============================================"
-          terraform output
+          echo "::notice::Terraform outputs are available via Dagger logs."

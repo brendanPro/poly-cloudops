@@ -160,10 +160,8 @@ By completing this project, students will acquire:
    # Edit .env with your credentials
    ```
 
-4. **Initialize Dagger**
-   ```bash
-   dagger init
-   ```
+4. **Dagger module**
+   The Dagger module is already initialized at the repo root. No extra init step is required.
 
 5. **Initialize Terraform**
    ```bash
@@ -171,7 +169,7 @@ By completing this project, students will acquire:
    ```
 
 6. **Review the project structure**
-   - `dagger/` or `src/` - Dagger module with CI/CD workflow functions
+   - `src/` - Dagger module with CI/CD workflow functions
    - `terraform/` - Infrastructure as Code
    - `docker/` - Docker configuration for n8n
    - `.github/workflows/` - GitHub Actions workflows (calling Dagger)
@@ -189,10 +187,25 @@ By completing this project, students will acquire:
 - Admin bootstrap and translations table setup run via Docker during `terraform apply`.
 - More details are in [terraform/README.md](terraform/README.md).
 
-### GitHub Actions (Terraform)
+### Dagger (Local)
 
-- The workflow in `.github/workflows/terraform-validate.yml` runs `terraform fmt`, `init`, `validate`, and `plan` on PRs and on push to `main` (only when `terraform/**` changes).
-- Deploy (`terraform apply`) runs only on push to `main` and requires manual approval via the GitHub Environment named `production`.
+Run the module locally (requires a valid GCP access token):
+
+```bash
+dagger functions
+dagger call validate --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN
+dagger call plan \
+   --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+   --n8n-admin-password env:N8N_ADMIN_PASSWORD \
+   --neon-api-key env:NEON_API_KEY \
+   --neon-org-id env:NEON_ORG_ID
+```
+
+### GitHub Actions (Dagger)
+
+- The workflow in `.github/workflows/terraform-validate.yml` runs Dagger `validate` and `plan` on PRs to `main` or `develop` (only when `terraform/**` changes).
+- A PR comment is posted with the Dagger plan output.
+- Deploy (`dagger call apply`) runs only on push to `main` and requires manual approval via the GitHub Environment named `production`.
 
 ### Staging Environment (Neon & Automation)
 
