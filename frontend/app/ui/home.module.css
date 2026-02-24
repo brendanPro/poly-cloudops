@@ -1,6 +1,6 @@
 .container {
     min-height: 100vh;
-    background-color: #0a1628;
+    background-color: #9CD5FF;
     display: flex;
     flex-direction: column;
 }
@@ -23,26 +23,30 @@
 .content {
     flex: 1;
     padding: 2rem;
-    color: #e0e7ff;
+    color: #355872;
 }
 
 .title {
+    align-items: center;
+    text-align: center;
     font-size: 2rem;
     font-weight: 700;
-    color: #e0e7ff;
+    color: #355872;
     margin-bottom: 1rem;
 }
 
 .description {
     font-size: 1rem;
     line-height: 1.6;
-    color: #a5b4d1;
+    color: #355872;
+    background-color: #9CD5FF;
 }
 
 /* Translation page additions */
 .container {
     padding: 24px;
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    
 }
 
 .controlsRow {
@@ -55,21 +59,33 @@
 .field {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    size: fill;
 }
 
 .label {
     display: block;
     margin-bottom: 6px;
-    font-size: 14px;
+    font-size: 18px;
+    color: #355872;
+    padding: 4px;
+    border-radius: 5px;
+    text-align: center;
 }
 
 .select {
     padding: 6px 8px;
-    font-size: 14px;
+    font-size: 18px;
+    color: #355872;
+    color: #F7F8F0;
+    background-color: #355872;
+    padding: 4px;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 8px;
 }
 
 .actions {
-    margin-left: auto;
     display: flex;
     gap: 8px;
 }
@@ -77,7 +93,7 @@
 .button {
     padding: 8px 12px;
     border-radius: 6px;
-    background: rgb(111, 12, 12);
+    background: #355872;
     cursor: pointer;
 }
 
@@ -85,13 +101,14 @@
     padding: 8px 12px;
     border-radius: 6px;
     border: none;
-    background: rgb(111, 12, 12);
+    background: #355872;
     cursor: pointer;
 }
 
 .textareas {
     display: flex;
     gap: 12px;
+    min-width: 400px;
 }
 
 .textarea {
@@ -100,18 +117,27 @@
     padding: 12px;
     font-size: 14px;
     line-height: 1.4;
+    background: #7AAACE;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 25px;
+    border-color: #355872;
 }
 
 .textareaTranslated {
     flex: 1;
     min-height: 220px;
     padding: 12px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.4;
-    background: #0a1628;
+    background: #7AAACE;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 25px;
+    border-color: #355872;
 }
 
 .error {
     margin-top: 12px;
-    color: #a00;
+    color: rgb(80, 3, 3);
 }

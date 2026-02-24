@@ -64,7 +64,25 @@ export default function TranslationPage() {
               </option>
             ))}
           </select>
+            <div className={styles.textareas}>
+              <textarea
+            aria-label="Texte source"
+            className={styles.textarea}
+            value={sourceText}
+            onChange={(e) => setSourceText(e.target.value)}
+            placeholder="Entrez le texte à traduire"
+          />
+          </div>
         </div>
+        <div className={styles.actions}>
+          <button className={styles.button} onClick={handleSwap} type="button">
+            Interchanger
+          </button>
+          <button className={styles.button} onClick={handleTranslate} disabled={loading || !sourceText.trim()} type="button">
+            {loading ? "Traduction en cours..." : "Traduire"}
+          </button>
+        </div>
+
 
         <div className={styles.field}>
           <label className={styles.label}>Langue cible</label>
@@ -75,34 +93,18 @@ export default function TranslationPage() {
               </option>
             ))}
           </select>
+            <div className={styles.textareas}>
+              <textarea
+              aria-label="Texte traduit"
+              className={styles.textareaTranslated}
+              value={translatedText}
+              readOnly
+              placeholder="Traduction"
+            />
+          </div>
         </div>
 
-        <div className={styles.actions}>
-          <button className={styles.button} onClick={handleSwap} type="button">
-            Interchanger
-          </button>
-          <button className={styles.buttonPrimary} onClick={handleTranslate} disabled={loading || !sourceText}>
-            {loading ? "Traduction…" : "Traduire"}
-          </button>
-        </div>
-      </div>
-
-      <div className={styles.textareas}>
-        <textarea
-          aria-label="Texte source"
-          className={styles.textarea}
-          value={sourceText}
-          onChange={(e) => setSourceText(e.target.value)}
-          placeholder="Entrez le texte à traduire"
-        />
-
-        <textarea
-          aria-label="Texte traduit"
-          className={styles.textareaTranslated}
-          value={translatedText}
-          readOnly
-          placeholder="Traduction"
-        />
+        
       </div>
 
       {error && (
