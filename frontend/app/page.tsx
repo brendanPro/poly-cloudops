@@ -75,8 +75,8 @@ export default function TranslationPage() {
           </div>
         </div>
         <div className={styles.actions}>
-          <button className={styles.button} onClick={handleSwap} type="button">
-            Interchanger
+          <button className={styles.button} onClick={handleSwap} type="button" title="Interchanger les langues">
+            ⇄
           </button>
           <button className={styles.button} onClick={handleTranslate} disabled={loading || !sourceText.trim()} type="button">
             {loading ? "Traduction en cours..." : "Traduire"}
