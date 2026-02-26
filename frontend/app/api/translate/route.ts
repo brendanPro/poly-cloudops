@@ -13,12 +13,6 @@ export async function POST(request: Request) {
     
     if (!text) return NextResponse.json({ translatedText: "" });
 
-    const deepLKey = process.env.deepl;
-    if (!deepLKey) {
-      console.error("[API] Missing DeepL key");
-      return NextResponse.json({ error: "Server configuration error: missing DeepL key" }, { status: 500 });
-    }
-
     // Build payload for n8n webhook
     const payload: Record<string, any> = {
       text,
@@ -32,7 +26,6 @@ export async function POST(request: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `DeepL-Auth-Key ${deepLKey}`,
       },
       body: JSON.stringify(payload),
     });
