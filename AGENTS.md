@@ -36,34 +36,6 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 **Configuring Workload Identity Federation** (for CI/CD authentication):
 
 This project uses Workload Identity Federation (WIF) for keyless authentication to Google Cloud from GitHub Actions. The WIF provider and GitHub secrets are already configured.
-
-**If you need to reconfigure or troubleshoot:**
-
-1. **WIF Provider** (already created):
-   - Created via Terraform in `terraform/main.tf`
-   - Run `terraform output wif_provider_name` to see the provider resource name
-
-2. **GitHub Repository Secrets** (already configured):
-   - Navigate to: https://github.com/brendanPro/poly-cloudops/settings/secrets/actions
-   - Required secrets:
-     - `GCP_PROJECT_ID`: `polycloudops`
-     - `GCP_WIF_PROVIDER`: Full WIF provider name (from terraform output)
-     - `GCP_SERVICE_ACCOUNT`: `terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com`
-
-3. **IAM Binding** (requires project owner):
-   - The terraform-sa service account needs the `roles/iam.workloadIdentityUser` binding
-   - If the Terraform resource `google_service_account_iam_member.wif_binding` fails to apply:
-   ```bash
-   # Run this command as project owner (project-owner@example.com):
-   gcloud iam service-accounts add-iam-policy-binding terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com \
-     --member="principalSet://iam.googleapis.com/projects/GCP_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/brendanPro/poly-cloudops" \
-     --role="roles/iam.workloadIdentityUser"
-   ```
-
-4. **Verify Workflow Permissions**:
-   - Repository Settings → Actions → General → Workflow permissions
-   - Should be set to "Read and write permissions"
-
 **Workflow Files**:
 - `.github/workflows/terraform-validate.yml` - Terraform validation and planning
 
