@@ -141,126 +141,97 @@ By completing this project, students will acquire:
 
 ### Quick Start
 
-#### 1. Clone the repository
-```bash
-git clone <repository-url>
-cd poly-cloudops
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd poly-cloudops
+   ```
 
-#### 2. Install dependencies (automatically sets up git hooks)
-```bash
-bun install
-```
+2. **Install dependencies (automatically sets up git hooks)**
+   ```bash
+   bun install
+   ```
+   
+   > **Note:** This automatically installs Husky and sets up git hooks via the `prepare` script. No manual setup needed!
 
-> **Note:** This automatically installs Husky and sets up git hooks via the `prepare` script. No manual setup needed!
+3. **Set up environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your credentials
+   ```
 
-#### 3. Configure environment variables
+4. **Initialize Dagger**
+   ```bash
+   dagger init
+   ```
 
-Create a `.env` file from the template:
+5. **Initialize Terraform**
+   ```bash
+   terraform init
+   ```
 
-```bash
-cp .env.example .env
-```
+6. **Review the project structure**
+   - `dagger/` or `src/` - Dagger module with CI/CD workflow functions
+   - `terraform/` - Infrastructure as Code
+   - `docker/` - Docker configuration for n8n
+   - `.github/workflows/` - GitHub Actions workflows (calling Dagger)
+   - `workflows/` - n8n workflow definitions
+   - `.husky/` - Git hooks (automatically installed via Husky)
+   - `scripts/` - Utility scripts
 
-Edit `.env` and configure the following required variables:
+7. **Follow the phase-by-phase work breakdown above**
 
-⚠️You need to generate your own `N8N_ENCRYPTION_KEY` using the command :
+### Terraform Notes
 
-```bash
-openssl rand -base64 24 
-```
+- Neon is managed by Terraform (project, database, and users).
+- Only two secrets must exist before running Terraform: `n8n-encryption-key` and `deepl-api-key`.
+- Database secrets (`db-host`, `db-user`, `db-password`, `db-database`, and `n8n-db-connection-string`) are created by Terraform.
+- Admin bootstrap and translations table setup run via Docker during `terraform apply`.
+- More details are in [terraform/README.md](terraform/README.md).
 
-```bash
-# Database Configuration
-DB_HOST=your_neon_or_supabase_host
-DB_PORT=5432
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_SSL=true
+### GitHub Actions (Terraform)
 
-# n8n Configuration
-N8N_BASIC_AUTH_ACTIVE=true
-N8N_ENCRYPTION_KEY=your_generated_n8n_encryption_key
+The workflow in `.github/workflows/terraform-validate.yml` orchestrates the entire lifecycle:
+1.  **Continuous Integration (CI)**:
+    - Runs `terraform fmt`, `init`, `validate` on all PRs and pushes.
+    - **Security**: Generates a binary plan (`tfplan`), encrypts it using GPG (`PLAN_ENCRYPTION_KEY`), and uploads it as an artifact.
+2.  **Continuous Deployment (CD)**:
+    - **Staging**: Pushing to `develop` triggers an **automatic** deployment to the Staging environment.
+      - Uses Terraform workspace: `staging`
+      - Cloud Run Service: `n8n-service-staging`
+    - **Production**: Pushing to `main` triggers a deployment to Production, requiring **manual approval** via GitHub Environments.
+      - Uses Terraform workspace: `prod`
+      - Cloud Run Service: `n8n-service` (default)
+    - **Manual Deployment**: You can also trigger deployments manually using `workflow_dispatch`:
+      - Go to **GitHub** → **Actions** → **Terraform CI/CD Pipeline** → **Run workflow**
+      - Select your desired environment (`staging` or `production`)
+      - **Note**: Production deployments still require approval from designated reviewers
+3.  **Safety**:
+    - Uses **Terraform Workspaces** to isolate state between environments.
+    - Decrypts and applies the *exact* plan validated in the CI stage to prevent drift.
+    - Environment-specific resources use dynamic suffixes (e.g., `-staging`) to prevent conflicts.
 
-# AI API Tokens (required for workflow execution)
-DEEPL_API_KEY=your_deepl_api_key
-```
+### Staging Environment (Neon & Automation)
 
-> ⚠️ **Security Note:** Never commit `.env` files to version control. The `.gitignore` file already excludes them.
+To test the project in an environment close to production, we use Neon PostgreSQL as a managed database.
 
-#### 4. Start the project with Docker Compose
+1. **Database & User Automation**
+The staging environment is designed to be "zero-config" for the user:
 
-Launch n8n and its dependencies locally:
+Automated Setup: When you launch the stack, a custom SQL Bootstrap script automatically creates the Admin user and bypasses the n8n welcome screen.
 
-```bash
-docker-compose up -d
-```
+Shared Data: Since we all share the same Neon Database, all workflows and credentials already registered in the neondb are immediately available to everyone.
 
-This will start:
-- **n8n** service: http://localhost:5678
-- **PostgreSQL** database (if configured locally)
+2. **How to launch**
+To start the staging stack with the pre-configured database:
 
-To view logs:
-```bash
-docker-compose logs -f
-```
+\# 1. Ensure your .env.staging is correctly filled with Neon credentials
+\# 2. Launch the stack using the staging environment file
+docker-compose --env-file .env.staging up -d
+**⚠️ Critical Warnings**
+Encryption Key: You must keep the same N8N_ENCRYPTION_KEY once the database is initialized. If you change this key, n8n will be unable to decrypt existing credentials, and you will lose access to your integrations (DeepL, etc.).
 
-To stop the services:
-```bash
-docker-compose down
-```
-
-#### 5. Access n8n
-
-Once Docker Compose is running:
-- Open your browser and navigate to: http://localhost:5678
-- Log in with your credentials set in `.env` (`N8N_BASIC_AUTH_USER` / `N8N_BASIC_AUTH_PASSWORD`)
-- Import or create workflows from the `workflows/` directory
-
-#### 6. Review the project structure
-
-- `docker/` - Docker configuration for n8n
-- `.github/workflows/` - GitHub Actions workflows (calling Dagger)
-- `workflows/` - n8n workflow definitions
-- `init_db/` - Database initialization scripts
-- `.husky/` - Git hooks (automatically installed via Husky)
-
-#### 7. Follow the phase-by-phase work breakdown above
-
-## n8n User Setup (Password Hashing)
-
-n8n uses **bcrypt** to hash admin passwords. The password hashing is now **automatically handled by PostgreSQL** during database initialization.
-
-### Automatic Password Hashing
-
-The `bootstrap/setup-n8n.sql` script uses PostgreSQL's `pgcrypto` extension to generate bcrypt hashes automatically:
-
-```sql
--- Enable pgcrypto extension for password hashing
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- Update user with hashed password (bcrypt with 10 rounds)
-UPDATE "user" 
-SET email = :'admin_email', 
-    password = crypt(:'admin_password', gen_salt('bf', 10)),
-    "roleSlug" = 'global:owner', 
-    "updatedAt" = NOW() 
-WHERE "roleSlug" = 'global:owner' OR email IS NULL OR email = '';
-```
-
-### Configuration
-
-Simply set your admin credentials in the `.env` file:
-
-```env
-N8N_ADMIN_EMAIL=admin@cloudops.com
-N8N_ADMIN_PASSWORD=YourSecurePassword123!
-```
-
-The password will be automatically hashed using bcrypt (10 rounds) when the database is initialized via `docker-compose up`.
-
-> **Note:** You no longer need to manually generate password hashes or use external scripts. PostgreSQL handles this securely during setup.
+Shared State: Any workflow modification or deletion in Staging will be reflected for all users sharing the same Neon instance.
 
 ## 📝 Commit Message Format
 

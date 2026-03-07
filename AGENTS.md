@@ -31,6 +31,15 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 
 **Note:** Git hooks are automatically installed via Husky when running `bun install`. The `prepare` script in package.json ensures hooks are set up for all developers automatically.
 
+### GitHub Actions Setup
+
+**Configuring Workload Identity Federation** (for CI/CD authentication):
+
+This project uses Workload Identity Federation (WIF) for keyless authentication to Google Cloud from GitHub Actions. The WIF provider and GitHub secrets are managed by Terraform and configured in the CI pipeline.
+
+**Workflow Files**:
+- `.github/workflows/terraform-validate.yml` - Terraform validation and planning
+
 ## Build and Test Commands
 
 ### Terraform Commands
@@ -63,6 +72,10 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Test Dagger workflows locally before pushing: `dagger do <workflow-name>`
 - Test GitHub Actions workflows locally: `act` (optional, requires Docker)
 - Validate workflow syntax: Check `.github/workflows/*.yml` files
+- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
+- View workflow runs: GitHub → Actions tab
+- Check PR comments: Terraform plan output appears automatically on PRs
+- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
 - Always test workflows in a branch before merging to main
 - Use Dagger for consistent local and CI execution
 
@@ -161,6 +174,10 @@ Branch names must follow conventional commit types for consistency:
 
 - Test Dagger workflows locally: `dagger do <workflow-name>` before pushing
 - Test GitHub Actions workflows on feature branches
+- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
+- View workflow runs: GitHub → Actions tab
+- Check PR comments: Terraform plan output appears automatically on PRs
+- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
 - Verify Docker image builds successfully via Dagger
 - Ensure Terraform plans execute without errors
 - Check that deployments update Cloud Run/App Runner correctly

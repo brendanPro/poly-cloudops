@@ -15,3 +15,5 @@ VALUES
     ('userManagement', '{"showSetupOnFirstLoad":false}'), 
     ('owner_setup_completed', 'true') 
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+\echo 'n8n setup completed successfully'
