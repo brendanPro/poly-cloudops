@@ -172,15 +172,28 @@ Branch names must follow conventional commit types for consistency:
 
 ### CI/CD Testing
 
+**GitHub Actions Workflow** (`.github/workflows/terraform-validate.yml`):
+- Validation runs on all PRs to `develop` or `main`
+- Staging deploys automatically on push to `develop`
+- Production deploys on push to `main` (requires manual approval)
+
+**Manual workflow trigger**: GitHub → Actions → Terraform CI/CD Pipeline → Run workflow
+
+**Verify deployment**:
+- Check PR comments for Terraform plan output
+- View workflow runs in GitHub Actions tab
+- Verify WIF authentication in logs (no credentials should appear)
+
+**Terraform Workspaces**:
+```bash
+terraform workspace list              # Show all workspaces
+terraform workspace select staging    # Switch to staging
+terraform workspace select prod       # Switch to production
+terraform workspace show              # Show current workspace
+```
+
+**Dagger.io**: Planned for future phase (see separate branch)
 - Test Dagger workflows locally: `dagger do <workflow-name>` before pushing
-- Test GitHub Actions workflows on feature branches
-- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
-- View workflow runs: GitHub → Actions tab
-- Check PR comments: Terraform plan output appears automatically on PRs
-- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
-- Verify Docker image builds successfully via Dagger
-- Ensure Terraform plans execute without errors
-- Check that deployments update Cloud Run/App Runner correctly
 - Use Dagger's built-in observability to debug workflow issues
 
 ### Security Testing

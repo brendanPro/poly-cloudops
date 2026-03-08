@@ -249,7 +249,7 @@ resource "google_cloud_run_v2_service" "n8n" {
     google_secret_manager_secret_iam_member.db_user_access,
     google_secret_manager_secret_iam_member.db_password_access,
     google_secret_manager_secret_iam_member.db_database_access,
-    google_artifact_registry_repository.n8n_repo,
+    # google_artifact_registry_repository.n8n_repo,  # Using Docker Hub official image
   ]
 }
 

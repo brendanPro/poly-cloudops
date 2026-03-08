@@ -28,23 +28,25 @@ output "n8n_service_latest_revision" {
 }
 
 # ============================================================================
-# ARTIFACT REGISTRY OUTPUTS
+# ARTIFACT REGISTRY OUTPUTS - COMMENTED OUT
 # ============================================================================
-
-output "artifact_registry_repository_url" {
-  description = "The full URL of the Artifact Registry repository"
-  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.n8n_repo.repository_id}"
-}
-
-output "artifact_registry_repository_name" {
-  description = "The name of the Artifact Registry repository"
-  value       = google_artifact_registry_repository.n8n_repo.name
-}
-
-output "docker_push_command" {
-  description = "Command to push Docker images to Artifact Registry"
-  value       = "docker push ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.n8n_repo.repository_id}/n8n:latest"
-}
+# Using official n8nio/n8n:2.10.4 image from Docker Hub
+# Uncomment if using custom images
+#
+# output "artifact_registry_repository_url" {
+#   description = "The full URL of the Artifact Registry repository"
+#   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.n8n_repo.repository_id}"
+# }
+# 
+# output "artifact_registry_repository_name" {
+#   description = "The name of the Artifact Registry repository"
+#   value       = google_artifact_registry_repository.n8n_repo.name
+# }
+# 
+# output "docker_push_command" {
+#   description = "Command to push Docker images to Artifact Registry"
+#   value       = "docker push ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.n8n_repo.repository_id}/n8n:latest"
+# }
 
 # ============================================================================
 # IAM OUTPUTS
@@ -101,8 +103,8 @@ output "helpful_commands" {
     view_logs        = "gcloud run services logs read ${google_cloud_run_v2_service.n8n.name} --region=${var.region} --limit=50"
     describe_service = "gcloud run services describe ${google_cloud_run_v2_service.n8n.name} --region=${var.region}"
     open_n8n         = "open ${google_cloud_run_v2_service.n8n.uri}"
-    configure_docker = "gcloud auth configure-docker ${var.region}-docker.pkg.dev"
-    tag_image        = "docker tag n8nio/n8n:latest ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.n8n_repo.repository_id}/n8n:latest"
+    # configure_docker = "gcloud auth configure-docker ${var.region}-docker.pkg.dev"  # Using Docker Hub
+    # tag_image        = "docker tag n8nio/n8n:2.10.4 ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.n8n_repo.repository_id}/n8n:2.10.4"
   }
 }
 

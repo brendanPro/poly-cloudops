@@ -30,17 +30,23 @@ variable "environment" {
 # ARTIFACT REGISTRY CONFIGURATION
 # ============================================================================
 
-variable "artifact_registry_repository_id" {
-  description = "The ID of the Artifact Registry repository for Docker images"
-  type        = string
-  default     = "n8n-repo"
-}
-
-variable "artifact_registry_description" {
-  description = "Description for the Artifact Registry repository"
-  type        = string
-  default     = "Docker repository for n8n custom images"
-}
+# ============================================================================
+# ARTIFACT REGISTRY VARIABLES - COMMENTED OUT
+# ============================================================================
+# Using official n8nio/n8n:2.10.4 image from Docker Hub
+# Uncomment these if you need to build custom images
+# 
+# variable "artifact_registry_repository_id" {
+#   description = "The ID of the Artifact Registry repository for Docker images"
+#   type        = string
+#   default     = "n8n-repo"
+# }
+# 
+# variable "artifact_registry_description" {
+#   description = "Description for the Artifact Registry repository"
+#   type        = string
+#   default     = "Docker repository for n8n custom images"
+# }
 
 # ============================================================================
 # CLOUD RUN CONFIGURATION
@@ -53,9 +59,9 @@ variable "cloudrun_service_name" {
 }
 
 variable "cloudrun_image" {
-  description = "Docker image for Cloud Run service (will be updated after first push)"
+  description = "Docker image for Cloud Run service"
   type        = string
-  default     = "n8nio/n8n:latest"
+  default     = "n8nio/n8n:2.10.4"
 }
 
 variable "cloudrun_cpu" {

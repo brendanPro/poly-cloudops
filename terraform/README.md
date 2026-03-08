@@ -87,8 +87,8 @@ This infrastructure uses GitHub Actions for automated validation and deployment.
 **Workflow File**: `.github/workflows/terraform-validate.yml`
 
 **Triggers**:
-- Pull requests targeting `main` or `master` branches
-- Pushes to `main` or `master` branches (when terraform files change)
+- Pull requests targeting `develop` or `main` branches
+- Pushes to `develop` or `main` branches (when terraform files change)
 - Manual workflow dispatch
 
 **Workflow Steps**:
@@ -142,14 +142,16 @@ gcloud iam service-accounts add-iam-policy-binding terraform-sa@GCP_PROJECT_ID.i
 
 ### Current Workflow Status
 
-✅ **Validation-only** (no deployments):
+**Validation (CI)**:
 - `terraform fmt` - Format checking
 - `terraform validate` - Syntax validation
-- `terraform plan` - State-aware planning
+- `terraform plan` - State-aware planning (encrypted artifact)
 
-❌ **Not yet implemented**:
-- `terraform apply` - Automated deployments
-- Docker build/push - Container image building
-- Dagger.io integration - CI/CD workflow composition
+**Deployment (CD)**:
+- Staging: Automatic on push to `develop` branch
+- Production: Manual approval on push to `main` branch
+- Uses Terraform workspaces for state isolation (staging/prod)
+
+**Future**: Dagger.io integration for workflow composition
 
 ---
