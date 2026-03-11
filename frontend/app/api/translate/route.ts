@@ -9,42 +9,38 @@ type Body = {
 export async function POST(request: Request) {
   try {
     const { text = "", target, source }: Body = await request.json();
-    //console.log("[API] Received request:", { text, target, source });
-    
+
     if (!text) return NextResponse.json({ translatedText: "" });
 
-    // Build payload for n8n webhook
+    const n8nUrl = process.env.N8N_WEBHOOK_URL;
+    if (!n8nUrl) {
+      console.error("[API] N8N_WEBHOOK_URL is not defined");
+      return NextResponse.json(
+        { error: "Webhook URL not configured" },
+        { status: 500 }
+      );
+    }
+
     const payload: Record<string, any> = {
       text,
       target_lang: (target || "EN").toUpperCase(),
     };
     if (source) payload.source_lang = source.toUpperCase();
 
-    //console.log("[API] Sending to n8n webhook:", payload);
-
-    const resp = await fetch("http://localhost:5678/webhook-test/translate", { //A changer dans le futur pour un lien dans une variable d'environnement
+    const resp = await fetch(n8nUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    //console.log("[API] n8n response status:", resp.status);
     const bodyText = await resp.text();
-    //console.log("[API] n8n response body:", bodyText);
-
     if (!resp.ok) {
       return NextResponse.json({ error: bodyText }, { status: 500 });
     }
 
     const json = JSON.parse(bodyText);
-    const translatedText = json.translated_text;
-    //console.log("[API] Translated text:", translatedText);
-    
-    return NextResponse.json({ translatedText });
-  } 
-  catch (err: any) {
+    return NextResponse.json({ translatedText: json.translated_text });
+  } catch (err: any) {
     console.error("[API] Error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
