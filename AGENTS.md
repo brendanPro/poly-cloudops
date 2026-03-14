@@ -51,12 +51,6 @@ This project uses Workload Identity Federation (WIF) for keyless authentication 
 - Destroy infrastructure: `terraform destroy` (use with caution)
 - Format Terraform files: `terraform fmt -recursive`
 
-### Docker Commands
-
-- Build n8n Docker image: `docker build -t n8n-custom:latest ./docker`
-- Test Docker image locally: `docker run -p 5678:5678 n8n-custom:latest`
-- Push to container registry: `docker push <registry>/n8n-custom:latest`
-
 ### Dagger Commands
 
 - Initialize Dagger: `dagger init`
@@ -89,13 +83,6 @@ This project uses Workload Identity Federation (WIF) for keyless authentication 
 - Store sensitive values in Terraform Cloud/state or environment variables
 - Follow naming conventions: `resource_type_name` (e.g., `google_cloud_run_service_n8n`)
 - Use `terraform fmt` before committing
-
-### Docker
-
-- Use multi-stage builds for smaller images
-- Pin base image versions (avoid `latest` in production)
-- Minimize layers and use `.dockerignore`
-- Document environment variables in Dockerfile comments
 
 ### Dagger
 
@@ -188,9 +175,11 @@ Branch names must follow conventional commit types for consistency:
 ```bash
 terraform workspace list              # Show all workspaces
 terraform workspace select staging    # Switch to staging
-terraform workspace select prod       # Switch to production
+terraform workspace select default    # Switch to production (default workspace)
 terraform workspace show              # Show current workspace
 ```
+
+**Note**: The `default` workspace is used for production infrastructure, while `staging` uses environment-specific resource naming with `-staging` suffix.
 
 **Dagger.io**: Planned for future phase (see separate branch)
 - Test Dagger workflows locally: `dagger do <workflow-name>` before pushing

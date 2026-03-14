@@ -5,7 +5,7 @@
 
 resource "google_cloud_run_v2_service" "n8n" {
   project             = var.project_id
-  name                = var.cloudrun_service_name
+  name                = "${var.cloudrun_service_name}${local.env_suffix}"
   location            = var.region
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
@@ -51,7 +51,7 @@ resource "google_cloud_run_v2_service" "n8n" {
         period_seconds        = 5
         failure_threshold     = 10
         http_get {
-          path = "/healthz"
+          path = "/health"
           port = var.n8n_port
         }
       }
@@ -62,7 +62,7 @@ resource "google_cloud_run_v2_service" "n8n" {
         period_seconds        = 10
         failure_threshold     = 3
         http_get {
-          path = "/healthz"
+          path = "/health"
           port = var.n8n_port
         }
       }
@@ -166,9 +166,14 @@ resource "google_cloud_run_v2_service" "n8n" {
       }
 
       env {
-        name  = "WEBHOOK_URL"
-        value = "https://${var.cloudrun_service_name}-${data.google_project.project.number}.${var.region}.run.app/"
+        name  = "N8N_ENDPOINT_HEALTH"
+        value = "health" # Custom health endpoint to avoid GCP /healthz conflict
       }
+
+      # Note: WEBHOOK_URL and N8N_EDITOR_BASE_URL omitted intentionally
+      # n8n will auto-detect its URL from the HTTP Host header
+      # This prevents URL mismatch issues with Cloud Run's auto-generated URLs
+      # n8n uses: https://docs.n8n.io/hosting/configuration/environment-variables/deployment/
 
       env {
         name  = "GENERIC_TIMEZONE"

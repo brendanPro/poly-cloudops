@@ -21,7 +21,7 @@ on:
         type: choice
         options:
           - staging
-          - prod
+          - default
 permissions:
   contents: read
   id-token: write
@@ -73,17 +73,17 @@ jobs:
           if [[ -n "${{ github.event.inputs.environment }}" ]]; then
             ENV="${{ github.event.inputs.environment }}"
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            ENV="prod"
+            ENV="default"
           elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
             ENV="staging"
           else
             ENV="staging"
           fi
           
-          if [[ "$ENV" == "prod" ]]; then
-            echo "Selecting 'prod' workspace."
-            terraform workspace select prod || terraform workspace new prod
-            echo "workspace=prod" >> $GITHUB_OUTPUT
+          if [[ "$ENV" == "default" ]]; then
+            echo "Selecting 'default' workspace (production)."
+            terraform workspace select default
+            echo "workspace=default" >> $GITHUB_OUTPUT
             echo "service_name=n8n-service" >> $GITHUB_OUTPUT
           elif [[ "$ENV" == "staging" ]]; then
             echo "Selecting 'staging' workspace."
@@ -226,7 +226,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: terraform-validate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'default'
     environment: production
     defaults:
       run:
@@ -255,13 +255,13 @@ jobs:
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
       - name: Select Production Workspace
-        run: terraform workspace select prod || terraform workspace new prod
+        run: terraform workspace select default
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: terraform-plan-prod
+          name: terraform-plan-default
           path: terraform
       - name: Decrypt Plan
         run: |

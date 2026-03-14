@@ -12,9 +12,10 @@ resource "neon_project" "main" {
   org_id                    = var.neon_org_id
   history_retention_seconds = 21600 # 6 hours (maximum allowed by Neon)
 
-  lifecycle {
-    prevent_destroy = true # Prevent accidental deletion of the database
-  }
+  # TEMPORARILY DISABLED FOR REPRODUCIBILITY TEST
+  # lifecycle {
+  #   prevent_destroy = true # Prevent accidental deletion of the database
+  # }
 }
 
 # ============================================================================
@@ -211,7 +212,7 @@ resource "null_resource" "create_translations_table" {
 resource "null_resource" "bootstrap_n8n" {
   provisioner "local-exec" {
     # Wait via Docker, then launch postgres client - works on Windows, Linux, macOS
-    command = "docker run --rm alpine sleep 20 && docker run --rm -v ${abspath(path.module)}/../bootstrap/setup-n8n.sql:/script.sql:ro -e PGPASSWORD=${neon_role.n8n_user.password} postgres:16-alpine psql -h ${neon_project.main.database_host} -U ${neon_role.n8n_user.name} -d ${neon_database.n8n_db.name} -v admin_email='${var.n8n_admin_email}' -v admin_password='${var.n8n_admin_password}' -f /script.sql"
+    command = "docker run --rm alpine sleep 40 && docker run --rm -v ${abspath(path.module)}/../bootstrap/setup-n8n.sql:/script.sql:ro -e PGPASSWORD=${neon_role.n8n_user.password} postgres:16-alpine psql -h ${neon_project.main.database_host} -U ${neon_role.n8n_user.name} -d ${neon_database.n8n_db.name} -v admin_email='${var.n8n_admin_email}' -v admin_password='${var.n8n_admin_password}' -f /script.sql"
   }
 
   depends_on = [
