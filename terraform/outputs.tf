@@ -182,7 +182,7 @@ output "wif_provider_name" {
 
 output "wif_service_account" {
   description = "Service account email for GitHub Actions to impersonate"
-  value       = "terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com"
+  value       = "terraform-sa@${var.project_id}.iam.gserviceaccount.com"
 }
 
 output "github_secrets_config" {
@@ -190,6 +190,6 @@ output "github_secrets_config" {
   value = {
     GCP_PROJECT_ID      = var.project_id
     GCP_WIF_PROVIDER    = google_iam_workload_identity_pool_provider.github_provider.name
-    GCP_SERVICE_ACCOUNT = "terraform-sa@GCP_PROJECT_ID.iam.gserviceaccount.com"
+    GCP_SERVICE_ACCOUNT = "terraform-sa@${var.project_id}.iam.gserviceaccount.com"
   }
 }

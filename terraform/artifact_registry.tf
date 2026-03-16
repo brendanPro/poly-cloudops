@@ -10,7 +10,7 @@
 # ============================================================================
 # Creates a Docker repository for storing n8n container images
 
-# resource "google_artifact_registry_repository" "n8n_repo" {
+# resource "google_artifact_registry_repository" "n8n_docker_registry" {
 #   project       = var.project_id
 #   location      = var.region
 #   repository_id = "${var.artifact_registry_repository_id}${local.env_suffix}"
@@ -36,9 +36,9 @@
 
 # Allow the Cloud Run service account to pull images from Artifact Registry
 # resource "google_artifact_registry_repository_iam_member" "cloudrun_reader" {
-#   project    = google_artifact_registry_repository.n8n_repo.project
-#   location   = google_artifact_registry_repository.n8n_repo.location
-#   repository = google_artifact_registry_repository.n8n_repo.name
+#   project    = google_artifact_registry_repository.n8n_docker_registry.project
+#   location   = google_artifact_registry_repository.n8n_docker_registry.location
+#   repository = google_artifact_registry_repository.n8n_docker_registry.name
 #   role       = "roles/artifactregistry.reader"
 #   member     = "serviceAccount:${google_service_account.cloudrun_sa.email}"
 # }

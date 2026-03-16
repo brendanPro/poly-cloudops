@@ -187,7 +187,7 @@ By completing this project, students will acquire:
 - Only two secrets must exist before running Terraform: `n8n-encryption-key` and `deepl-api-key`.
 - Database secrets (`db-host`, `db-user`, `db-password`, `db-database`, and `n8n-db-connection-string`) are created by Terraform.
 - Admin bootstrap and translations table setup run via Docker during `terraform apply`.
-- More details are in [terraform/README.md](terraform/README.md).
+- For infrastructure reproducibility (destroy/apply cycle, WIF soft-delete fix), see the [Infrastructure Reproducibility Guide](docs/infrastructure-reproducibility.md).
 
 ### GitHub Actions (Terraform)
 

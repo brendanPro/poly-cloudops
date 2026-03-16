@@ -62,9 +62,12 @@ jobs:
         run: terraform init
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FORCE_COLOR: "1"
       - name: Terraform Validate
         id: validate
-        run: terraform validate -no-color
+        run: terraform validate
+        env:
+          FORCE_COLOR: "1"
       # DYNAMIC WORKSPACE & SERVICE NAME SELECTION
       - name: Select Terraform Workspace & Service Name
         id: workspace
@@ -93,6 +96,7 @@ jobs:
           fi
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FORCE_COLOR: "1"
       
       - name: Terraform Plan
         id: plan
@@ -185,16 +189,18 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~> 1.0"
-          terraform_wrapper: false
+          terraform_wrapper: true
       
       - name: Terraform Init
         run: terraform init
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FORCE_COLOR: "1"
       - name: Select Staging Workspace
         run: terraform workspace select staging || terraform workspace new staging
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FORCE_COLOR: "1"
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
@@ -215,12 +221,15 @@ jobs:
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
           # Fix: Force unique name for Staging
           TF_VAR_cloudrun_service_name: "n8n-service-staging"
+          FORCE_COLOR: "1"
       
       - name: Deployment Summary
         if: success()
         run: |
           echo "::notice::✅ STAGING DEPLOYMENT SUCCESSFUL"
           terraform output
+        env:
+          FORCE_COLOR: "1"
   # JOB 3: DEPLOY TO PRODUCTION (MANUAL APPROVAL)
   terraform-deploy-production:
     name: Deploy to Production
@@ -248,16 +257,18 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~> 1.0"
-          terraform_wrapper: false
+          terraform_wrapper: true
       
       - name: Terraform Init
         run: terraform init
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FORCE_COLOR: "1"
       - name: Select Production Workspace
         run: terraform workspace select default
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FORCE_COLOR: "1"
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
@@ -278,9 +289,12 @@ jobs:
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
           # Fix: Keep original name for Production
           TF_VAR_cloudrun_service_name: "n8n-service"
+          FORCE_COLOR: "1"
       
       - name: Deployment Summary
         if: success()
         run: |
           echo "::notice::✅ PRODUCTION DEPLOYMENT SUCCESSFUL"
           terraform output
+        env:
+          FORCE_COLOR: "1"
