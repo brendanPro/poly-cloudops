@@ -3,6 +3,9 @@
     background-color: #9CD5FF;
     display: flex;
     flex-direction: column;
+    padding: 24px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    
 }
 
 .header {
@@ -40,13 +43,6 @@
     line-height: 1.6;
     color: #355872;
     background-color: #9CD5FF;
-}
-
-/* Translation page additions */
-.container {
-    padding: 24px;
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    
 }
 
 .controlsRow {
