@@ -92,7 +92,7 @@ jobs:
             echo "Selecting 'staging' workspace."
             terraform workspace select staging || terraform workspace new staging
             echo "workspace=staging" >> $GITHUB_OUTPUT
-            echo "service_name=n8n-service-staging" >> $GITHUB_OUTPUT
+            echo "service_name=n8n-service" >> $GITHUB_OUTPUT
           fi
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
@@ -220,7 +220,7 @@ jobs:
           TF_VAR_neon_api_key: ${{ secrets.NEON_API_KEY }}
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
           # Fix: Force unique name for Staging
-          TF_VAR_cloudrun_service_name: "n8n-service-staging"
+          TF_VAR_cloudrun_service_name: "n8n-service"
           FORCE_COLOR: "1"
       
       - name: Deployment Summary
