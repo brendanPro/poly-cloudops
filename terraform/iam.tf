@@ -60,6 +60,80 @@ resource "google_project_iam_member" "cloudrun_sa_metric_writer" {
 }
 
 # ============================================================================
+# TERRAFORM SERVICE ACCOUNT (for CI/CD automation)
+# ============================================================================
+
+# Reference existing terraform-sa service account
+# This account is used by GitHub Actions via Workload Identity Federation
+data "google_service_account" "terraform_sa" {
+  account_id = "terraform-sa"
+  project    = var.project_id
+}
+
+# Grant terraform-sa the necessary permissions with least privilege approach
+# These roles replace the overly-permissive roles/editor role
+
+resource "google_project_iam_member" "terraform_sa_compute_network_admin" {
+  project = var.project_id
+  role    = "roles/compute.networkAdmin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_iam_security_admin" {
+  project = var.project_id
+  role    = "roles/iam.securityAdmin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_iam_service_account_admin" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountAdmin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_iam_workload_identity_pool_admin" {
+  project = var.project_id
+  role    = "roles/iam.workloadIdentityPoolAdmin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_secret_manager_admin" {
+  project = var.project_id
+  role    = "roles/secretmanager.admin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_secret_manager_accessor" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_service_usage_admin" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageAdmin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_storage_admin" {
+  project = var.project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+resource "google_project_iam_member" "terraform_sa_iam_service_account_user" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${data.google_service_account.terraform_sa.email}"
+}
+
+# ============================================================================
 # DATA SOURCES
 # ============================================================================
 
