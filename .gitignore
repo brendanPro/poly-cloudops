@@ -44,6 +44,8 @@ docker-compose.override.yml
 .settings/
 *.sublime-project
 *.sublime-workspace
+.vs/
+
 
 # OS files
 .DS_Store
