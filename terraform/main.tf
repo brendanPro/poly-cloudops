@@ -53,8 +53,8 @@ resource "google_project_service" "required_apis" {
 
 
 resource "google_iam_workload_identity_pool" "github_pool" {
-  workload_identity_pool_id = "gh-pool${local.env_suffix}"
-  display_name              = "GitHub Actions Pool${local.env_suffix}"
+  workload_identity_pool_id = "gh-pool"
+  display_name              = "GitHub Actions Pool"
 }
 
 # ============================================================================
