@@ -52,32 +52,6 @@ resource "google_project_service" "required_apis" {
 # to avoid duplication errors.
 
 
-resource "google_iam_workload_identity_pool" "github_pool" {
-  workload_identity_pool_id = "gh-pool${local.env_suffix}"
-  display_name              = "GitHub Actions Pool${local.env_suffix}"
-}
 
-# ============================================================================
-# WORKLOAD IDENTITY FEDERATION PROVIDER FOR GITHUB ACTIONS
-# ============================================================================
-# Enables keyless authentication for GitHub Actions via OIDC
-resource "google_iam_workload_identity_pool_provider" "github_provider" {
-  workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
-  workload_identity_pool_provider_id = "github-provider"
-  attribute_mapping = {
-    "google.subject"       = "assertion.sub"
-    "attribute.repository" = "assertion.repository"
-    "attribute.actor"      = "assertion.actor"
-  }
-  attribute_condition = "assertion.repository == 'brendanPro/poly-cloudops'"
-  oidc {
-    issuer_uri = "https://token.actions.githubusercontent.com"
-  }
-}
 
-# Allow GitHub Actions from this repository to impersonate the terraform service account
-resource "google_service_account_iam_member" "wif_binding" {
-  service_account_id = "projects/${var.project_id}/serviceAccounts/terraform-sa@${var.project_id}.iam.gserviceaccount.com"
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/brendanPro/poly-cloudops"
-}
+

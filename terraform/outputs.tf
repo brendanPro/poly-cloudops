@@ -171,25 +171,25 @@ output "database_connection_info" {
   sensitive = true
 }
 
+
 # ============================================================================
 # WORKLOAD IDENTITY FEDERATION OUTPUTS
 # ============================================================================
-
+# WIF resources are managed outside of Terraform
+# These outputs provide the configuration needed for GitHub Actions secrets
 output "wif_provider_name" {
-  description = "The full resource name of the WIF provider for GitHub Actions"
-  value       = try(google_iam_workload_identity_pool_provider.github_provider.name, "Managed in Production")
+  description = "The full resource name of the WIF provider for GitHub Actions (externally managed)"
+  value       = var.wif_provider_name != "" ? var.wif_provider_name : "WIF provider not configured in terraform.tfvars"
 }
-
 output "wif_service_account" {
-  description = "Service account email for GitHub Actions to impersonate"
-  value       = "terraform-sa@${var.project_id}.iam.gserviceaccount.com"
+  description = "Service account email that GitHub Actions impersonates via WIF"
+  value       = var.wif_service_account_email
 }
-
 output "github_secrets_config" {
-  description = "GitHub repository secrets configuration for CI/CD"
+  description = "Configuration values for GitHub repository secrets (used by CI/CD pipeline)"
   value = {
     GCP_PROJECT_ID      = var.project_id
-    GCP_WIF_PROVIDER    = google_iam_workload_identity_pool_provider.github_provider.name
-    GCP_SERVICE_ACCOUNT = "terraform-sa@${var.project_id}.iam.gserviceaccount.com"
+    GCP_WIF_PROVIDER    = var.wif_provider_name
+    GCP_SERVICE_ACCOUNT = var.wif_service_account_email
   }
 }

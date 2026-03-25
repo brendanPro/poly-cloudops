@@ -240,3 +240,21 @@ variable "cloudrun_service_account_display_name" {
   type        = string
   default     = "n8n Cloud Run Service Account"
 }
+
+# ============================================================================
+# WORKLOAD IDENTITY FEDERATION CONFIGURATION
+# ============================================================================
+# WIF resources (pool, provider, service account bindings) are managed 
+# outside of Terraform to prevent accidental destruction and ensure 
+# CI/CD pipeline authentication persists across infrastructure lifecycle.
+#
+# These variables reference the externally managed WIF configuration.
+variable "wif_provider_name" {
+  description = "Full resource name of the Workload Identity Federation provider for GitHub Actions (format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID)"
+  type        = string
+  default     = ""  # Must be set in terraform.tfvars
+}
+variable "wif_service_account_email" {
+  description = "Email of the service account that GitHub Actions impersonates via Workload Identity Federation"
+  type        = string
+}
