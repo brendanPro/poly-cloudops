@@ -108,6 +108,9 @@ jobs:
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
           # Fix: Pass dynamic service name to prevent conflicts
           TF_VAR_cloudrun_service_name: ${{ steps.workspace.outputs.service_name }}
+          # WIF configuration (externally managed)
+          TF_VAR_wif_provider_name: ${{ secrets.TF_VAR_WIF_PROVIDER_NAME }}
+          TF_VAR_wif_service_account_email: ${{ secrets.TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL }}
       
       - name: Encrypt Plan
         run: |
@@ -221,6 +224,9 @@ jobs:
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
           # Fix: Force unique name for Staging
           TF_VAR_cloudrun_service_name: "n8n-service"
+          # WIF configuration (externally managed)
+          TF_VAR_wif_provider_name: ${{ secrets.TF_VAR_WIF_PROVIDER_NAME }}
+          TF_VAR_wif_service_account_email: ${{ secrets.TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL }}
           FORCE_COLOR: "1"
       
       - name: Deployment Summary
@@ -289,6 +295,9 @@ jobs:
           TF_VAR_neon_org_id: ${{ secrets.NEON_ORG_ID }}
           # Fix: Keep original name for Production
           TF_VAR_cloudrun_service_name: "n8n-service"
+          # WIF configuration (externally managed)
+          TF_VAR_wif_provider_name: ${{ secrets.TF_VAR_WIF_PROVIDER_NAME }}
+          TF_VAR_wif_service_account_email: ${{ secrets.TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL }}
           FORCE_COLOR: "1"
       
       - name: Deployment Summary
