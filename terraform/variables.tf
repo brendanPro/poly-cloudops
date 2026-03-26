@@ -252,7 +252,7 @@ variable "cloudrun_service_account_display_name" {
 variable "wif_provider_name" {
   description = "Full resource name of the Workload Identity Federation provider for GitHub Actions (format: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID)"
   type        = string
-  default     = ""  # Must be set in terraform.tfvars
+  default     = "" # Must be set in terraform.tfvars
 }
 variable "wif_service_account_email" {
   description = "Email of the service account that GitHub Actions impersonates via Workload Identity Federation"
