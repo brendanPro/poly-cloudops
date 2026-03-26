@@ -31,6 +31,15 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 
 **Note:** Git hooks are automatically installed via Husky when running `bun install`. The `prepare` script in package.json ensures hooks are set up for all developers automatically.
 
+### GitHub Actions Setup
+
+**Configuring Workload Identity Federation** (for CI/CD authentication):
+
+This project uses Workload Identity Federation (WIF) for keyless authentication to Google Cloud from GitHub Actions. The WIF provider and GitHub secrets are managed by Terraform and configured in the CI pipeline.
+
+**Workflow Files**:
+- `.github/workflows/terraform-validate.yml` - Terraform validation and planning
+
 ## Build and Test Commands
 
 ### Terraform Commands
@@ -41,12 +50,6 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Apply infrastructure: `terraform apply`
 - Destroy infrastructure: `terraform destroy` (use with caution)
 - Format Terraform files: `terraform fmt -recursive`
-
-### Docker Commands
-
-- Build n8n Docker image: `docker build -t n8n-custom:latest ./docker`
-- Test Docker image locally: `docker run -p 5678:5678 n8n-custom:latest`
-- Push to container registry: `docker push <registry>/n8n-custom:latest`
 
 ### Dagger Commands
 
@@ -63,6 +66,10 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Test Dagger workflows locally before pushing: `dagger do <workflow-name>`
 - Test GitHub Actions workflows locally: `act` (optional, requires Docker)
 - Validate workflow syntax: Check `.github/workflows/*.yml` files
+- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
+- View workflow runs: GitHub → Actions tab
+- Check PR comments: Terraform plan output appears automatically on PRs
+- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
 - Always test workflows in a branch before merging to main
 - Use Dagger for consistent local and CI execution
 
@@ -76,13 +83,6 @@ The architecture is fully stateless, relying on external databases (Neon/Supabas
 - Store sensitive values in Terraform Cloud/state or environment variables
 - Follow naming conventions: `resource_type_name` (e.g., `google_cloud_run_service_n8n`)
 - Use `terraform fmt` before committing
-
-### Docker
-
-- Use multi-stage builds for smaller images
-- Pin base image versions (avoid `latest` in production)
-- Minimize layers and use `.dockerignore`
-- Document environment variables in Dockerfile comments
 
 ### Dagger
 
@@ -159,11 +159,30 @@ Branch names must follow conventional commit types for consistency:
 
 ### CI/CD Testing
 
+**GitHub Actions Workflow** (`.github/workflows/terraform-validate.yml`):
+- Validation runs on all PRs to `develop` or `main`
+- Staging deploys automatically on push to `develop`
+- Production deploys on push to `main` (requires manual approval)
+
+**Manual workflow trigger**: GitHub → Actions → Terraform CI/CD Pipeline → Run workflow
+
+**Verify deployment**:
+- Check PR comments for Terraform plan output
+- View workflow runs in GitHub Actions tab
+- Verify WIF authentication in logs (no credentials should appear)
+
+**Terraform Workspaces**:
+```bash
+terraform workspace list              # Show all workspaces
+terraform workspace select staging    # Switch to staging
+terraform workspace select default    # Switch to production (default workspace)
+terraform workspace show              # Show current workspace
+```
+
+**Note**: The `default` workspace is used for production infrastructure, while `staging` uses environment-specific resource naming with `-staging` suffix.
+
+**Dagger.io**: Planned for future phase (see separate branch)
 - Test Dagger workflows locally: `dagger do <workflow-name>` before pushing
-- Test GitHub Actions workflows on feature branches
-- Verify Docker image builds successfully via Dagger
-- Ensure Terraform plans execute without errors
-- Check that deployments update Cloud Run/App Runner correctly
 - Use Dagger's built-in observability to debug workflow issues
 
 ### Security Testing

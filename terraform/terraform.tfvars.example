@@ -1,0 +1,109 @@
+# ============================================================================
+# TERRAFORM VARIABLES EXAMPLE
+# ============================================================================
+# Copy this file to terraform.tfvars and customize the values
+# Command: cp terraform.tfvars.example terraform.tfvars
+#
+# IMPORTANT: terraform.tfvars is in .gitignore and should NEVER be committed
+# ============================================================================
+
+# ============================================================================
+# PROJECT CONFIGURATION
+# ============================================================================
+
+project_id  = "polycloudops"
+region      = "europe-west1"
+zone        = "europe-west1-b"
+environment = "staging"
+
+# ============================================================================
+# ARTIFACT REGISTRY CONFIGURATION
+# ============================================================================
+
+artifact_registry_repository_id = "n8n-repo"
+artifact_registry_description   = "Docker repository for n8n custom images"
+
+# ============================================================================
+# CLOUD RUN CONFIGURATION
+# ============================================================================
+
+cloudrun_service_name = "n8n-service"
+
+# Docker image URL (uses official n8n image)
+cloudrun_image = "n8nio/n8n:latest"
+
+# Resource allocation
+cloudrun_cpu    = "1"     # 1 vCPU
+cloudrun_memory = "1Gi"   # 1GB RAM
+
+# Auto-scaling configuration
+cloudrun_min_instances = 1   # Persistently active to avoid cold starts
+cloudrun_max_instances = 10  # Maximum concurrent instances
+
+# Performance settings
+cloudrun_concurrency     = 80    # Requests per instance
+cloudrun_timeout         = 300   # 5 minutes timeout for long workflows
+cloudrun_cpu_throttling  = true  # Throttle CPU when idle
+
+# Access control
+cloudrun_allow_unauthenticated = true  # Allow public access (n8n has its own auth)
+
+# ============================================================================
+# N8N APPLICATION CONFIGURATION
+# ============================================================================
+
+n8n_port               = 5678
+n8n_timezone           = "Europe/Paris"
+n8n_protocol           = "https"
+n8n_executions_process = "main"
+n8n_admin_email        = "admin@cloudops.com"
+n8n_admin_password     = "CHANGE_ME_STRONG_PASSWORD"
+
+# ============================================================================
+# NEON DATABASE CONFIGURATION
+# ============================================================================
+# Obtain your API key from https://console.neon.tech/app/settings/api-keys
+# Obtain your org_id from https://console.neon.tech/app/settings/organizations
+# Terraform will automatically create and manage the Neon project and database
+
+neon_api_key = "napi_YOUR_NEON_API_KEY_HERE"        # Replace with your Neon API key
+neon_org_id  = "YOUR_NEON_ORGANIZATION_ID_HERE"     # Replace with your Neon organization ID
+
+# ============================================================================
+# SECRET MANAGER CONFIGURATION
+# ============================================================================
+# IMPORTANT: Only TWO secrets must be created manually in GCP Secret Manager BEFORE running terraform apply:
+# - n8n-encryption-key: Encryption key for n8n workflows
+# - deepl-api-key: DeepL translation API key
+#
+# Database secrets are automatically created and managed by Terraform
+#
+# Create required secrets with these commands (using terraform-sa impersonation):
+#   echo -n "your-encryption-key" | gcloud secrets create n8n-encryption-key --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#   echo -n "your-deepl-api-key" | gcloud secrets create deepl-api-key --data-file=- --impersonate-service-account=terraform-sa@<PROJECT_ID>.iam.gserviceaccount.com
+#
+# Secret values are NOT stored here for security reasons
+
+secret_n8n_encryption_key   = "n8n-encryption-key"              # Secret name in GCP Secret Manager
+secret_db_connection_string = "n8n-db-connection-string"        # Auto-created by Terraform
+secret_deepl_api_key        = "deepl-api-key"                   # DeepL translation API key secret
+
+# ============================================================================
+# CLOUD STORAGE CONFIGURATION
+# ============================================================================
+
+# Set to true if you want a Cloud Storage bucket for workflow exports, files, etc.
+create_storage_bucket = false
+
+# Bucket configuration (only used if create_storage_bucket = true)
+storage_bucket_name          = "polycloudops-n8n-storage" # Must be globally unique!
+storage_bucket_location      = "europe-west1"             # Same region as Cloud Run for better performance
+storage_bucket_storage_class = "STANDARD"
+storage_bucket_versioning    = true
+
+# ============================================================================
+# IAM CONFIGURATION
+# ============================================================================
+
+cloudrun_service_account_name         = "n8n-cloudrun-sa"
+cloudrun_service_account_display_name = "n8n Cloud Run Service Account"

@@ -181,6 +181,58 @@ By completing this project, students will acquire:
 
 7. **Follow the phase-by-phase work breakdown above**
 
+### Terraform Notes
+
+- Neon is managed by Terraform (project, database, and users).
+- Only two secrets must exist before running Terraform: `n8n-encryption-key` and `deepl-api-key`.
+- Database secrets (`db-host`, `db-user`, `db-password`, `db-database`, and `n8n-db-connection-string`) are created by Terraform.
+- Admin bootstrap and translations table setup run via Docker during `terraform apply`.
+- For infrastructure reproducibility (destroy/apply cycle, WIF soft-delete fix), see the [Infrastructure Reproducibility Guide](docs/infrastructure-reproducibility.md).
+
+### GitHub Actions (Terraform)
+
+The workflow in `.github/workflows/terraform-validate.yml` orchestrates the entire lifecycle:
+1.  **Continuous Integration (CI)**:
+    - Runs `terraform fmt`, `init`, `validate` on all PRs and pushes.
+    - **Security**: Generates a binary plan (`tfplan`), encrypts it using GPG (`PLAN_ENCRYPTION_KEY`), and uploads it as an artifact.
+2.  **Continuous Deployment (CD)**:
+    - **Staging**: Pushing to `develop` triggers an **automatic** deployment to the Staging environment.
+      - Uses Terraform workspace: `staging`
+      - Cloud Run Service: `n8n-service-staging`
+    - **Production**: Pushing to `main` triggers a deployment to Production, requiring **manual approval** via GitHub Environments.
+      - Uses Terraform workspace: `prod`
+      - Cloud Run Service: `n8n-service` (default)
+    - **Manual Deployment**: You can also trigger deployments manually using `workflow_dispatch`:
+      - Go to **GitHub** → **Actions** → **Terraform CI/CD Pipeline** → **Run workflow**
+      - Select your desired environment (`staging` or `production`)
+      - **Note**: Production deployments still require approval from designated reviewers
+3.  **Safety**:
+    - Uses **Terraform Workspaces** to isolate state between environments.
+    - Decrypts and applies the *exact* plan validated in the CI stage to prevent drift.
+    - Environment-specific resources use dynamic suffixes (e.g., `-staging`) to prevent conflicts.
+
+### Staging Environment (Neon & Automation)
+
+To test the project in an environment close to production, we use Neon PostgreSQL as a managed database.
+
+1. **Database & User Automation**
+The staging environment is designed to be "zero-config" for the user:
+
+Automated Setup: When you launch the stack, a custom SQL Bootstrap script automatically creates the Admin user and bypasses the n8n welcome screen.
+
+Shared Data: Since we all share the same Neon Database, all workflows and credentials already registered in the neondb are immediately available to everyone.
+
+2. **How to launch**
+To start the staging stack with the pre-configured database:
+
+\# 1. Ensure your .env.staging is correctly filled with Neon credentials
+\# 2. Launch the stack using the staging environment file
+docker-compose --env-file .env.staging up -d
+**⚠️ Critical Warnings**
+Encryption Key: You must keep the same N8N_ENCRYPTION_KEY once the database is initialized. If you change this key, n8n will be unable to decrypt existing credentials, and you will lose access to your integrations (DeepL, etc.).
+
+Shared State: Any workflow modification or deletion in Staging will be reflected for all users sharing the same Neon instance.
+
 ## 📝 Commit Message Format
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. The format is enforced via git hooks.
