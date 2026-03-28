@@ -1,117 +1,68 @@
 "use client";
 
-import { useState } from "react";
-import styles from "./ui/home.module.css";
+import Link from "next/link";
+import styles from "./hub.module.css";
 
-const LANGUAGES = [
-  { code: "EN", label: "English" },
-  { code: "FR", label: "Français" },
-  { code: "ES", label: "Español" },
-  { code: "DE", label: "Deutsch" },
-  { code: "IT", label: "Italiano" },
-  { code: "PT", label: "Português" },
-  { code: "NL", label: "Nederlands" },
-  { code: "RU", label: "Русский" },
-  { code: "JA", label: "日本語" },
-  { code: "ZH", label: "中文" },
+const WORKFLOWS = [
+  {
+    id: "translate",
+    title: "Traduction de texte",
+    description: "Traduisez du texte dans plusieurs langues en utilisant l'IA",
+    icon: "🌐",
+    href: "/translate"
+  }
+  // Ajoutez ici d'autres workflows plus tard
 ];
 
-export default function TranslationPage() {
-  const [sourceLang, setSourceLang] = useState("FR");
-  const [targetLang, setTargetLang] = useState("EN");
-  const [sourceText, setSourceText] = useState("");
-  const [translatedText, setTranslatedText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleTranslate() { //fonction permettant au boutton d'envoyer la requête à l'api
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sourceText, source: sourceLang, target: targetLang }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setTranslatedText(data.translatedText ?? "");
-    } catch (err: any) {
-      setError(err.message || String(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleSwap() { //fonction permettant d'interchanger les langues et les textes, pas encore très fonctionnel pour la langue source car deepl choisit automatiquement la langue source dans le workflow en fonction de ce qu'il détecte.
-    setSourceText(translatedText);
-    setTranslatedText(sourceText);
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
-  }
-
+export default function HomePage() {
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Page de Traduction</h1>
+      <div className={styles.content}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>Poly CloudOps Hub</h1>
+          <p className={styles.subtitle}>
+            Plateforme d'automatisation cloud avec workflows n8n
+          </p>
+        </header>
 
-      <div className={styles.controlsRow}>
-        <div className={styles.field}>
-          <label className={styles.label}>Langue source</label>
-          <select className={styles.select} value={sourceLang} onChange={(e) => setSourceLang(e.target.value)}>
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
+        <main className={styles.main}>
+          <h2 className={styles.sectionTitle}>Workflows disponibles</h2>
+
+          <div className={styles.workflowsGrid}>
+            {WORKFLOWS.map((workflow) => (
+              <div key={workflow.id} className={styles.workflowCard}>
+                <div className={styles.workflowIcon}>
+                  {workflow.icon}
+                </div>
+                <h3 className={styles.workflowTitle}>
+                  {workflow.title}
+                </h3>
+                <p className={styles.workflowDescription}>
+                  {workflow.description}
+                </p>
+                <div className={styles.buttonContainer}>
+                  <Link
+                    href={workflow.href}
+                    className={styles.workflowButton}
+                  >
+                    Accéder au workflow →
+                  </Link>
+                </div>
+              </div>
             ))}
-          </select>
-            <div className={styles.textareas}>
-              <textarea
-            aria-label="Texte source"
-            className={styles.textarea}
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-            placeholder="Entrez le texte à traduire"
-          />
           </div>
-        </div>
-        <div className={styles.actions}>
-          <button className={styles.button} onClick={handleSwap} type="button" title="Interchanger les langues">
-            ⇄
-          </button>
-          <button className={styles.button} onClick={handleTranslate} disabled={loading || !sourceText.trim()} type="button">
-            {loading ? "Traduction en cours..." : "Traduire"}
-          </button>
-        </div>
 
+          {WORKFLOWS.length === 0 && (
+            <div className={styles.emptyState}>
+              <p>Aucun workflow disponible pour le moment.</p>
+            </div>
+          )}
+        </main>
 
-        <div className={styles.field}>
-          <label className={styles.label}>Langue cible</label>
-          <select className={styles.select} value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-            <div className={styles.textareas}>
-              <textarea
-              aria-label="Texte traduit"
-              className={styles.textareaTranslated}
-              value={translatedText}
-              readOnly
-              placeholder="Traduction"
-            />
-          </div>
-        </div>
-
-        
+        <footer className={styles.footer}>
+          <p>Polytech Angers - 2026</p>
+        </footer>
       </div>
-
-      {error && (
-        <div className={styles.error}>
-          Erreur: {error}
-        </div>
-      )}
     </div>
   );
 }
