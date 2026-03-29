@@ -13,9 +13,10 @@ secrets/
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.*
+# Allow committed examples but ignore real tfvars
 *.tfvars
 *.tfvars.json
-!terraform.tfvars.example
+!terraform/terraform.tfvars.example
 crash.log
 crash.*.log
 override.tf
@@ -132,4 +133,3 @@ workflows/backups/
 # CI/CD artifacts
 .act/
 .github/workflows/.act/
-

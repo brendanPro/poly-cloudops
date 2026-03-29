@@ -1,117 +1,105 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import styles from "./translate.module.css";
+import { useState } from 'react';
 
-const LANGUAGES = [
-  { code: "EN", label: "English" },
-  { code: "FR", label: "Français" },
-  { code: "ES", label: "Español" },
-  { code: "DE", label: "Deutsch" },
-  { code: "IT", label: "Italiano" },
-  { code: "PT", label: "Português" },
-  { code: "NL", label: "Nederlands" },
-  { code: "RU", label: "Русский" },
-  { code: "JA", label: "日本語" },
-  { code: "ZH", label: "中文" },
+const languageOptions = [
+  { value: 'EN', label: 'English' },
+  { value: 'FR', label: 'French' },
+  { value: 'ES', label: 'Spanish' },
+  { value: 'DE', label: 'German' },
+  { value: 'JA', label: 'Japanese' },
 ];
 
-export default function TranslationPage() {
-  const [sourceLang, setSourceLang] = useState("FR");
-  const [targetLang, setTargetLang] = useState("EN");
-  const [sourceText, setSourceText] = useState("");
-  const [translatedText, setTranslatedText] = useState("");
+export default function TranslatePage() {
+  const [text, setText] = useState('');
+  const [translatedText, setTranslatedText] = useState('');
+  const [target, setTarget] = useState('FR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleTranslate() { //fonction permettant au boutton d'envoyer la requête à l'api
-    setError(null);
+  const handleTranslate = async () => {
+    if (!text.trim()) {
+      setError('Please enter text to translate.');
+      return;
+    }
+
     setLoading(true);
+    setError(null);
+
     try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sourceText, source: sourceLang, target: targetLang }),
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, target }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setTranslatedText(data.translatedText ?? "");
-    } catch (err: any) {
-      setError(err.message || String(err));
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || 'Translation failed');
+
+      setTranslatedText(data.translatedText ?? '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unexpected error');
+      setTranslatedText('');
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleSwap() { //fonction permettant d'interchanger les langues et les textes, pas encore très fonctionnel pour la langue source car deepl choisit automatiquement la langue source dans le workflow en fonction de ce qu'il détecte.
-    setSourceText(translatedText);
-    setTranslatedText(sourceText);
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
-  }
+  };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Page de Traduction</h1>
+    <div className="max-w-4xl mx-auto px-4 py-12">
+      <h1 className="text-4xl font-bold mb-4">Text Translation</h1>
+      <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+        Trigger the deployed n8n translation workflow through its webhook.
+      </p>
 
-      <div className={styles.controlsRow}>
-        <div className={styles.field}>
-          <label className={styles.label}>Langue source</label>
-          <select className={styles.select} value={sourceLang} onChange={(e) => setSourceLang(e.target.value)}>
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">
+            Target Language
+          </label>
+          <select
+            className="w-full p-3 border rounded-lg bg-white dark:bg-gray-900"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+          >
+            {languageOptions.map((lang) => (
+              <option key={lang.value} value={lang.value}>
+                {lang.label}
               </option>
             ))}
           </select>
-            <div className={styles.textareas}>
-              <textarea
-            aria-label="Texte source"
-            className={styles.textarea}
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-            placeholder="Entrez le texte à traduire"
-          />
+        </div>
+
+        <textarea
+          className="w-full p-4 border rounded-lg"
+          rows={6}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter text to translate..."
+        />
+
+        <button
+          className="w-full py-3 px-6 rounded-xl text-white font-semibold text-center bg-primary-600 hover:bg-primary-700 disabled:opacity-60"
+          onClick={handleTranslate}
+          disabled={loading}
+        >
+          {loading ? 'Translating…' : 'Translate'}
+        </button>
+
+        {error && (
+          <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg">
+            {error}
           </div>
-        </div>
-        <div className={styles.actions}>
-          <button className={styles.button} onClick={handleSwap} type="button" title="Interchanger les langues">
-            ⇄
-          </button>
-          <button className={styles.button} onClick={handleTranslate} disabled={loading || !sourceText.trim()} type="button">
-            {loading ? "Traduction en cours..." : "Traduire"}
-          </button>
-        </div>
+        )}
 
-
-        <div className={styles.field}>
-          <label className={styles.label}>Langue cible</label>
-          <select className={styles.select} value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-            <div className={styles.textareas}>
-              <textarea
-              aria-label="Texte traduit"
-              className={styles.textareaTranslated}
-              value={translatedText}
-              readOnly
-              placeholder="Traduction"
-            />
-          </div>
-        </div>
-
-        
+        <textarea
+          className="w-full p-4 border rounded-lg bg-gray-100"
+          rows={6}
+          value={translatedText}
+          readOnly
+          placeholder="Translation will appear here..."
+        />
       </div>
-
-      {error && (
-        <div className={styles.error}>
-          Erreur: {error}
-        </div>
-      )}
     </div>
   );
 }

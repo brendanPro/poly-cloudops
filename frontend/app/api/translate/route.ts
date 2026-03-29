@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 type Body = {
   text?: string;
@@ -6,42 +6,55 @@ type Body = {
   source?: string;
 };
 
+const normalizeLang = (value?: string, fallback = 'EN') =>
+  (value || fallback).trim().toUpperCase();
+
 export async function POST(request: Request) {
   try {
-    const { text = "", target, source }: Body = await request.json();
+    const { text = '', target, source }: Body = await request.json();
 
-    if (!text) return NextResponse.json({ translatedText: "" });
+    if (!text.trim()) return NextResponse.json({ translatedText: '' });
 
     const n8nUrl = process.env.N8N_WEBHOOK_URL;
     if (!n8nUrl) {
-      console.error("[API] N8N_WEBHOOK_URL is not defined");
+      console.error('[api/translate] Missing N8N_WEBHOOK_URL');
       return NextResponse.json(
-        { error: "Webhook URL not configured" },
+        { error: 'Webhook URL not configured' },
         { status: 500 }
       );
     }
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, string> = {
       text,
-      target_lang: (target || "EN").toUpperCase(),
+      target_lang: normalizeLang(target, 'EN'),
     };
-    if (source) payload.source_lang = source.toUpperCase();
+    if (source) payload.source_lang = normalizeLang(source);
 
     const resp = await fetch(n8nUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      // The webhook does not require cookies; avoid including them unnecessarily.
+      cache: 'no-store',
     });
 
     const bodyText = await resp.text();
     if (!resp.ok) {
-      return NextResponse.json({ error: bodyText }, { status: 500 });
+      console.error('[api/translate] Webhook error', bodyText);
+      return NextResponse.json({ error: 'Translation workflow failed' }, { status: 502 });
     }
 
-    const json = JSON.parse(bodyText);
-    return NextResponse.json({ translatedText: json.translated_text });
+    let json: any;
+    try {
+      json = JSON.parse(bodyText);
+    } catch (parseErr) {
+      console.error('[api/translate] Invalid JSON', parseErr, bodyText);
+      return NextResponse.json({ error: 'Invalid response from workflow' }, { status: 502 });
+    }
+
+    return NextResponse.json({ translatedText: json.translated_text ?? '' });
   } catch (err: any) {
-    console.error("[API] Error:", err);
+    console.error('[api/translate] Error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

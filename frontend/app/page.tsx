@@ -1,68 +1,70 @@
-"use client";
-
-import Link from "next/link";
-import styles from "./hub.module.css";
-
-const WORKFLOWS = [
-  {
-    id: "translate",
-    title: "Traduction de texte",
-    description: "Traduisez du texte dans plusieurs langues en utilisant l'IA",
-    icon: "🌐",
-    href: "/translate"
-  }
-  // Ajoutez ici d'autres workflows plus tard
-];
+import TopNavbar from '@/app/ui/TopNavbar';
+import StatsCard from '@/app/ui/StatsCard';
+import WorkflowCard from '@/app/ui/WorkflowCard';
+import {getStats, getActiveWorkflows} from '@/lib/workflows';
 
 export default function HomePage() {
+  const stats = getStats();
+  const activeWorkflows = getActiveWorkflows();
+
   return (
-    <div className={styles.container}>
-      <div className={styles.content}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>Poly CloudOps Hub</h1>
-          <p className={styles.subtitle}>
-            Plateforme d'automatisation cloud avec workflows n8n
+    <div className="min-h-screen bg-surface flex flex-col">
+      {/* Hero Section */}
+      <section className="gradient-hero-bg py-20 px-4">
+        <div className="max-w-7xl mx-auto text-center text-white animate-fade-in">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight">
+            Workflow Automation Hub
+          </h1>
+          <p className="text-xl md:text-2xl opacity-90 max-w-3xl mx-auto leading-relaxed">
+            Cloud native automation with n8n, serverless, and Dagger.io
           </p>
-        </header>
+        </div>
+      </section>
 
-        <main className={styles.main}>
-          <h2 className={styles.sectionTitle}>Workflows disponibles</h2>
+      {/* Stats Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <StatsCard
+            value={stats.total}
+            label="Total Workflows"
+            gradient="primary"
+          />
+          <StatsCard
+            value={stats.active}
+            label="Active Workflows"
+            gradient="secondary"
+          />
+          <StatsCard
+            value={stats.totalRuns}
+            label="Total Runs"
+            gradient="accent"
+          />
+        </div>
+      </section>
 
-          <div className={styles.workflowsGrid}>
-            {WORKFLOWS.map((workflow) => (
-              <div key={workflow.id} className={styles.workflowCard}>
-                <div className={styles.workflowIcon}>
-                  {workflow.icon}
-                </div>
-                <h3 className={styles.workflowTitle}>
-                  {workflow.title}
-                </h3>
-                <p className={styles.workflowDescription}>
-                  {workflow.description}
-                </p>
-                <div className={styles.buttonContainer}>
-                  <Link
-                    href={workflow.href}
-                    className={styles.workflowButton}
-                  >
-                    Accéder au workflow →
-                  </Link>
-                </div>
-              </div>
+      {/* Workflows Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
+          Available Workflows
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
+          Choose a workflow to get started
+        </p>
+
+        {activeWorkflows.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {activeWorkflows.map((workflow) => (
+              <WorkflowCard key={workflow.id} workflow={workflow} />
             ))}
           </div>
-
-          {WORKFLOWS.length === 0 && (
-            <div className={styles.emptyState}>
-              <p>Aucun workflow disponible pour le moment.</p>
-            </div>
-          )}
-        </main>
-
-        <footer className={styles.footer}>
-          <p>Polytech Angers - 2026</p>
-        </footer>
-      </div>
+        ) : (
+          <div className="text-center py-16 bg-gray-100 dark:bg-gray-800 rounded-2xl">
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
+              No active workflows found.
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

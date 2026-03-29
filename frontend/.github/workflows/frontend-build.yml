@@ -1,0 +1,59 @@
+name: frontend-build-push
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: europe-west1-docker.pkg.dev
+  PROJECT_ID: polycloudops
+  REPOSITORY: n8n-repo
+  IMAGE: frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/173389596894/locations/global/workloadIdentityPools/gh-pool/providers/github-provider-v2
+          service_account: github-actions@polycloudops.iam.gserviceaccount.com
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker $REGISTRY --quiet
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: frontend
+        run: bun run build
+
+      - name: Build Docker image
+        working-directory: frontend
+        run: |
+          DOCKER_IMAGE="$REGISTRY/$PROJECT_ID/$REPOSITORY/$IMAGE"
+          docker build -t "$DOCKER_IMAGE:latest" -t "$DOCKER_IMAGE:${{ github.sha }}" .
+
+      - name: Push Docker image
+        run: |
+          DOCKER_IMAGE="$REGISTRY/$PROJECT_ID/$REPOSITORY/$IMAGE"
+          docker push "$DOCKER_IMAGE:latest"
+          docker push "$DOCKER_IMAGE:${{ github.sha }}"

@@ -1,26 +1,191 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   POLY CLOUDOPS - BOLD TECH DESIGN SYSTEM
+   ============================================ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Primary Colors === */
+  --color-primary-900: #0D47A1;
+  --color-primary-700: #1565C0;
+  --color-primary-500: #2196F3;
+  --color-primary-300: #64B5F6;
+  --color-primary-100: #BBDEFB;
+  
+  /* === Secondary Colors === */
+  --color-secondary-900: #4A148C;
+  --color-secondary-700: #6A1B9A;
+  --color-secondary-500: #9C27B0;
+  --color-secondary-300: #BA68C8;
+  --color-secondary-100: #E1BEE7;
+  
+  /* === Accent Colors === */
+  --color-accent-900: #E65100;
+  --color-accent-700: #FF6F00;
+  --color-accent-500: #FFA000;
+  --color-accent-300: #FFB74D;
+  --color-accent-100: #FFE0B2;
+  
+  /* === Semantic Colors === */
+  --color-success: #00C853;
+  --color-warning: #FFD600;
+  --color-danger: #E91E63;
+  --color-info: #00B8D4;
+  
+  /* === Neutral Colors === */
+  --color-gray-900: #0A1929;
+  --color-gray-800: #1E293B;
+  --color-gray-700: #334155;
+  --color-gray-600: #475569;
+  --color-gray-500: #64748B;
+  --color-gray-400: #94A3B8;
+  --color-gray-300: #CBD5E1;
+  --color-gray-200: #E2E8F0;
+  --color-gray-100: #F1F5F9;
+  --color-gray-50: #F8FAFC;
+  
+  /* === Background & Surface === */
+  --background: #FFFFFF;
+  --surface: #F8FAFC;
+  --surface-elevated: #FFFFFF;
+  --foreground: #0A1929;
+  --foreground-muted: #475569;
+  
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-primary-500) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--color-secondary-900) 0%, var(--color-secondary-500) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--color-accent-900) 0%, var(--color-accent-500) 100%);
+  --gradient-hero: linear-gradient(135deg, var(--color-primary-900) 0%, var(--color-secondary-700) 50%, var(--color-accent-700) 100%);
+  
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 20px rgba(33, 150, 243, 0.3);
+  
+  /* === Spacing === */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* === Border Radius === */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+  
+  /* === Typography === */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  
+  /* === Transitions === */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
+  --transition-slow: 350ms ease-in-out;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark mode overrides */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0A1929;
+    --surface: #1E293B;
+    --surface-elevated: #334155;
+    --foreground: #F8FAFC;
+    --foreground-muted: #94A3B8;
+    --shadow-glow: 0 0 20px rgba(156, 39, 176, 0.4);
   }
 }
 
 body {
+  margin: 0;
+  padding: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-hero-bg {
+  background: var(--gradient-hero);
+}
+
+.gradient-primary-bg {
+  background: var(--gradient-primary);
+}
+
+.gradient-secondary-bg {
+  background: var(--gradient-secondary);
+}
+
+.gradient-accent-bg {
+  background: var(--gradient-accent);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(33, 150, 243, 0.4);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-base) ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background-color: var(--color-primary-500);
+  color: white;
 }
