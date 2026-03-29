@@ -95,7 +95,18 @@ jobs:
             terraform workspace select staging || terraform workspace new staging
             echo "workspace=staging" >> $GITHUB_OUTPUT
             echo "service_name=n8n-service" >> $GITHUB_OUTPUT
+          else
+            echo "::error::Invalid environment: $ENV. Must be 'default' or 'staging'."
+            exit 1
           fi
+          
+          # Safeguard: workspace output is not empty
+          WORKSPACE_OUTPUT=$(grep "^workspace=" $GITHUB_OUTPUT | cut -d'=' -f2)
+          if [[ -z "$WORKSPACE_OUTPUT" ]]; then
+            echo "::error::Workspace output is empty! This should never happen."
+            exit 1
+          fi
+          echo "✅ Workspace set to: $WORKSPACE_OUTPUT"
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           FORCE_COLOR: "1"
@@ -209,7 +220,7 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: terraform-plan-${{ needs.terraform-validate.outputs.workspace }}
+          name: terraform-plan-staging
           path: terraform
       - name: Decrypt Plan
         run: |
@@ -280,7 +291,7 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: terraform-plan-${{ needs.terraform-validate.outputs.workspace }}
+          name: terraform-plan-default
           path: terraform
       - name: Decrypt Plan
         run: |
