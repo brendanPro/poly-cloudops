@@ -13,9 +13,10 @@ secrets/
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.*
+# Allow committed examples but ignore real tfvars
 *.tfvars
 *.tfvars.json
-!terraform.tfvars.example
+!terraform/terraform.tfvars.example
 crash.log
 crash.*.log
 override.tf
@@ -44,6 +45,8 @@ docker-compose.override.yml
 .settings/
 *.sublime-project
 *.sublime-workspace
+.vs/
+
 
 # OS files
 .DS_Store
@@ -120,6 +123,8 @@ gcloud/
 !package.json
 !tsconfig.json
 !translation.json
+!translate-text-deepl.json
+
 
 # n8n workflow backups (if needed)
 workflows/backups/
@@ -128,4 +133,3 @@ workflows/backups/
 # CI/CD artifacts
 .act/
 .github/workflows/.act/
-

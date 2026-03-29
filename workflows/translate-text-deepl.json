@@ -1,0 +1,108 @@
+{
+  "name": "Translate Text with DeepL (Webhook)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-600, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "translate",
+        "responseMode": "lastNode"
+      }
+    },
+    {
+      "id": "extract",
+      "name": "Extract Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [-350, 0],
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "source_text", "value": "={{ $json.body.text }}" },
+            { "name": "target_lang", "value": "={{ $json.body.target_lang }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "deepl_http",
+      "name": "DeepL HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-100, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'DeepL-Auth-Key ' + $env.DEEPL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $json.source_text }}" },
+            { "name": "target_lang", "value": "={{ $json.target_lang }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "postgres",
+      "name": "Insert Translation (Neon)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [250, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO public.translations (source_text, translated_text, target_lang)\nVALUES (\n  '{{ $node[\"Extract Input\"].json.source_text }}',\n  '{{ $json.translations[0].text }}',\n  '{{ $node[\"Extract Input\"].json.target_lang }}'\n);"
+      },
+      "credentials": {
+        "postgres": {
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "id": "response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [500, 0],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "translated_text",
+              "value": "={{ $node[\"DeepL HTTP\"].json.translations[0].text }}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Input": {
+      "main": [[{ "node": "Extract Input", "type": "main" }]]
+    },
+    "Extract Input": {
+      "main": [[{ "node": "DeepL HTTP", "type": "main" }]]
+    },
+    "DeepL HTTP": {
+      "main": [[{ "node": "Insert Translation (Neon)", "type": "main" }]]
+    },
+    "Insert Translation (Neon)": {
+      "main": [[{ "node": "Format Response", "type": "main" }]]
+    }
+  }
+}
