@@ -30,6 +30,8 @@ jobs:
   terraform-validate:
     name: Validate Terraform Configuration
     runs-on: ubuntu-latest
+    outputs:
+      workspace: ${{ steps.workspace.outputs.workspace }}
     defaults:
       run:
         working-directory: terraform
@@ -120,8 +122,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-${{ steps.workspace.outputs.workspace }}
-          path: terraform/tfplan.gpg
-          retention-days: 1
+          path: tfplan.gpg
+          retention-days: 3
       
       - name: Comment PR with Terraform Plan
         uses: actions/github-script@v7
@@ -207,7 +209,7 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: terraform-plan-staging
+          name: terraform-plan-${{ needs.terraform-validate.outputs.workspace }}
           path: terraform
       - name: Decrypt Plan
         run: |
@@ -278,7 +280,7 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: terraform-plan-default
+          name: terraform-plan-${{ needs.terraform-validate.outputs.workspace }}
           path: terraform
       - name: Decrypt Plan
         run: |
