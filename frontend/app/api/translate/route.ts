@@ -15,9 +15,9 @@ export async function POST(request: Request) {
 
     if (!text.trim()) return NextResponse.json({ translatedText: '' });
 
-    const n8nUrl = process.env.N8N_WEBHOOK_URL;
+    const n8nUrl = process.env.N8N_TRANSLATE_WEBHOOK_URL;
     if (!n8nUrl) {
-      console.error('[api/translate] Missing N8N_WEBHOOK_URL');
+      console.error('[api/translate] Missing N8N_TRANSLATE_WEBHOOK_URL');
       return NextResponse.json(
         { error: 'Webhook URL not configured' },
         { status: 500 }

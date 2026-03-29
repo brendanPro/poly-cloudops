@@ -15,6 +15,21 @@ export const workflows: Workflow[] = [
     gradient: ['#0D47A1', '#6A1B9A'] as [string, string],
     path: '/translate',
     icon: '🌐'
+  },
+  {
+    id: 'qr',
+    name: 'QR Code Generator',
+    description: 'Generate QR codes via the n8n webhook and preview the image instantly',
+    category: 'automation',
+    status: 'active',
+    color: {
+      primary: '#111827',
+      secondary: '#4C1D95',
+      accent: '#D97706'
+    },
+    gradient: ['#0f172a', '#4C1D95'] as [string, string],
+    path: '/qr',
+    icon: '🔳'
   }
   // Future workflows can be added here
 ];

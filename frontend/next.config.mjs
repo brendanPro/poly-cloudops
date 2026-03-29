@@ -11,7 +11,8 @@ const nextConfig = {
   output: 'standalone',
 
   env: {
-    N8N_WEBHOOK_URL: process.env.N8N_WEBHOOK_URL,
+    N8N_TRANSLATE_WEBHOOK_URL: process.env.N8N_TRANSLATE_WEBHOOK_URL,
+    N8N_QR_WEBHOOK_URL: process.env.N8N_QR_WEBHOOK_URL,
   },
 };
 

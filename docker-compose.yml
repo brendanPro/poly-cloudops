@@ -9,7 +9,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/translation
+      - N8N_TRANSLATE_WEBHOOK_URL=http://n8n:5678/webhook/translation
+      - N8N_QR_WEBHOOK_URL=http://n8n:5678/webhook/generate-qr
       - PORT=3000
     depends_on:
       n8n:
