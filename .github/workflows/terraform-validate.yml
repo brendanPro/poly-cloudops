@@ -134,7 +134,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-${{ steps.workspace.outputs.workspace }}
-          path: tfplan-${{ steps.workspace.outputs.workspace }}.gpg
+          path: terraform/tfplan-${{ steps.workspace.outputs.workspace }}.gpg
           retention-days: 3
       
       - name: Comment PR with Terraform Plan
