@@ -12,6 +12,36 @@ Internet -> Cloud Run (frontend-service) -> Cloud Run (n8n-service) -> Neon (Pos
 
 There is no traditional load balancer in front of Cloud Run. GCP manages HTTP/2 ingress, TLS termination, and request routing to instances transparently. From the outside you get a single HTTPS URL per service.
 
+## Environment topology
+
+```mermaid
+flowchart LR
+    subgraph "Staging (develop branch)"
+        SF["frontend-service-staging\nCloud Run"]
+        SN["n8n-service-staging\nCloud Run"]
+        SP["Neon\npoly-cloudops-staging"]
+        SF -->|"webhook"| SN
+        SN --> SP
+    end
+
+    subgraph "Production (main branch)"
+        PF["frontend-service\nCloud Run"]
+        PN["n8n-service\nCloud Run"]
+        PP["Neon\npoly-cloudops-production"]
+        PF -->|"webhook"| PN
+        PN --> PP
+    end
+
+    style SF fill:#1d4ed8,color:#fff
+    style PF fill:#1d4ed8,color:#fff
+    style SN fill:#4f46e5,color:#fff
+    style PN fill:#4f46e5,color:#fff
+    style SP fill:#059669,color:#fff
+    style PP fill:#059669,color:#fff
+```
+
+Both environments share the same GCP project (`polycloudops`) but use isolated resources: separate Cloud Run services, separate Neon projects, separate Secret Manager secrets, separate VPCs. The `-staging` suffix is appended automatically by Terraform's `local.env_suffix`.
+
 ## Cloud Run scaling
 
 Cloud Run scales based on concurrent requests per instance. The relevant Terraform variables:

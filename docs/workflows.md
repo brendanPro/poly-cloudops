@@ -2,6 +2,28 @@
 
 This document describes each workflow, its webhook path, what it does, and how to add a new one.
 
+## Request flow
+
+Every workflow follows the same path:
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend (Next.js)
+    participant N as n8n (Cloud Run)
+    participant E as External API
+    participant D as Neon DB (optional)
+
+    U->>F: POST /api/workflow
+    F->>N: POST /webhook/{path}
+    N->>E: HTTP request (DeepL, OpenRouter, etc.)
+    E-->>N: API response
+    N->>D: INSERT (translation only)
+    D-->>N: OK
+    N-->>F: JSON response
+    F-->>U: Normalized JSON
+```
+
 ## Workflow inventory
 
 ### Translation (`translate-text-deepl.json`)

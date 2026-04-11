@@ -2,6 +2,32 @@
 
 This document covers running the full Poly-CloudOps stack on your machine.
 
+## Local architecture
+
+```mermaid
+flowchart LR
+    Browser["Browser\nlocalhost:3000"]
+    Frontend["frontend container\n(Next.js standalone)"]
+    n8n["n8n container\n(n8n 2.10.4)"]
+    Postgres["postgres container\n(PostgreSQL 17)"]
+    Bootstrap["db-bootstrap\n(one-shot)"]
+    APIs["External APIs\nDeepL, OpenRouter, etc."]
+
+    Browser -->|"http://localhost:3000"| Frontend
+    Frontend -->|"http://n8n:5678/webhook/..."| n8n
+    n8n -->|"calls"| APIs
+    n8n -->|"connects"| Postgres
+    Bootstrap -->|"runs setup SQL"| Postgres
+    Bootstrap -.->|"depends on"| n8n
+
+    style Frontend fill:#1d4ed8,color:#fff
+    style n8n fill:#4f46e5,color:#fff
+    style Postgres fill:#059669,color:#fff
+    style Bootstrap fill:#d97706,color:#fff
+```
+
+All four services run on a shared Docker bridge network (`cloudops-network`). The frontend reaches n8n via the internal hostname `n8n`, not `localhost`.
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) — package manager, used for the root monorepo and the frontend

@@ -8,6 +8,47 @@ An n8n workflow automation hub. A Next.js frontend exposes several automation to
 
 The infrastructure runs on GCP: n8n and the frontend are deployed as separate Cloud Run services, the database is Neon (serverless PostgreSQL), and all secrets are managed by GCP Secret Manager. Everything is provisioned with Terraform and deployed via GitHub Actions.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    User["User Browser"]
+    Frontend["Cloud Run\nfrontend-service\n(Next.js 14)"]
+    n8n["Cloud Run\nn8n-service\n(n8n 2.10.4)"]
+    Neon["Neon\nPostgreSQL"]
+    Secrets["GCP Secret Manager"]
+    APIs["External APIs\nDeepL, OpenRouter\nOpen-Meteo, ExchangeRate"]
+
+    User -->|"POST /api/workflow"| Frontend
+    Frontend -->|"webhook request"| n8n
+    n8n -->|"queries / writes"| Neon
+    n8n -->|"calls"| APIs
+    Secrets -.->|"mounts secrets\nas env vars"| n8n
+    Secrets -.->|"mounts secrets\nas env vars"| Frontend
+
+    style Frontend fill:#1d4ed8,color:#fff
+    style n8n fill:#4f46e5,color:#fff
+    style Neon fill:#059669,color:#fff
+    style Secrets fill:#d97706,color:#fff
+```
+
+## CI/CD Pipeline
+
+```mermaid
+flowchart TD
+    Push["Push to main / develop"] -->|"terraform/** changed"| Validate["terraform-validate\nfmt, init, validate, plan\nencrypt + upload plan artifact"]
+    Push -->|"frontend/** changed on main"| FrontendDeploy["frontend-deploy\nbuild Docker, push to AR\ndeploy to Cloud Run"]
+    Validate -->|"develop push"| Staging["Deploy Staging\nauto-apply plan"]
+    Validate -->|"main push"| ProdGate["Production Approval Gate"]
+    ProdGate -->|"approved"| Prod["Deploy Production\napply plan"]
+
+    style Validate fill:#1d4ed8,color:#fff
+    style FrontendDeploy fill:#7c3aed,color:#fff
+    style Staging fill:#059669,color:#fff
+    style Prod fill:#dc2626,color:#fff
+    style ProdGate fill:#d97706,color:#fff
+```
+
 ## Students
 
 - Samuel

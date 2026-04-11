@@ -2,6 +2,35 @@
 
 This document describes the two GitHub Actions pipelines, how Terraform workspaces map to environments, and the secrets required.
 
+## Pipeline overview
+
+```mermaid
+flowchart TD
+    subgraph "Terraform Pipeline"
+        A[Push terraform/**] --> B[terraform-validate\nfmt, init, validate, plan]
+        B --> C[Encrypt plan, upload artifact]
+        B --> D[Comment plan on PR]
+        C --> E{Which branch?}
+        E -->|develop| F[Deploy Staging\nauto-apply]
+        E -->|main| G[Production Approval Gate]
+        G -->|approved| H[Deploy Production\napply plan]
+    end
+
+    subgraph "Frontend Pipeline"
+        I[Push frontend/** to main] --> J[Validate 7 webhook secrets]
+        J --> K[Build Docker image]
+        K --> L[Push to Artifact Registry]
+        L --> M[Deploy to Cloud Run]
+    end
+
+    style B fill:#1d4ed8,color:#fff
+    style F fill:#059669,color:#fff
+    style H fill:#dc2626,color:#fff
+    style K fill:#7c3aed,color:#fff
+    style M fill:#7c3aed,color:#fff
+    style G fill:#d97706,color:#fff
+```
+
 ## Pipelines
 
 ### `terraform-validate.yml` — infrastructure
