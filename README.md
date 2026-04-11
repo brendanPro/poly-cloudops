@@ -2,6 +2,12 @@
 
 A school project to learn modern DevOps infrastructure by building and operating a real cloud-native application.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/brendanPro/poly-cloudops)
+
+
+
+#### Visit At : https://frontend-service-ud6xcrkoga-ew.a.run.app/
+
 ## What it is
 
 An n8n workflow automation hub. A Next.js frontend exposes several automation tools (text translation, QR code generation, JSON-to-Excel conversion, AI text summarization, weather lookup, currency conversion), each backed by an n8n workflow triggered via webhook.
