@@ -1,345 +1,135 @@
 # Poly-CloudOps
 
-**Cloud-Translate Pipeline** - A Cloud Native automation architecture project
+A school project to learn modern DevOps infrastructure by building and operating a real cloud-native application.
 
-## Students 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/brendanPro/poly-cloudops)
+
+
+
+#### Visit At : https://frontend-service-ud6xcrkoga-ew.a.run.app/
+
+## What it is
+
+An n8n workflow automation hub. A Next.js frontend exposes several automation tools (text translation, QR code generation, JSON-to-Excel conversion, AI text summarization, weather lookup, currency conversion), each backed by an n8n workflow triggered via webhook.
+
+The infrastructure runs on GCP: n8n and the frontend are deployed as separate Cloud Run services, the database is Neon (serverless PostgreSQL), and all secrets are managed by GCP Secret Manager. Everything is provisioned with Terraform and deployed via GitHub Actions.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User["User Browser"]
+    Frontend["Cloud Run\nfrontend-service\n(Next.js 14)"]
+    n8n["Cloud Run\nn8n-service\n(n8n 2.10.4)"]
+    Neon["Neon\nPostgreSQL"]
+    Secrets["GCP Secret Manager"]
+    APIs["External APIs\nDeepL, OpenRouter\nOpen-Meteo, ExchangeRate"]
+
+    User -->|"POST /api/workflow"| Frontend
+    Frontend -->|"webhook request"| n8n
+    n8n -->|"queries / writes"| Neon
+    n8n -->|"calls"| APIs
+    Secrets -.->|"mounts secrets\nas env vars"| n8n
+    Secrets -.->|"mounts secrets\nas env vars"| Frontend
+
+    style Frontend fill:#1d4ed8,color:#fff
+    style n8n fill:#4f46e5,color:#fff
+    style Neon fill:#059669,color:#fff
+    style Secrets fill:#d97706,color:#fff
+```
+
+## CI/CD Pipeline
+
+```mermaid
+flowchart TD
+    Push["Push to main / develop"] -->|"terraform/** changed"| Validate["terraform-validate\nfmt, init, validate, plan\nencrypt + upload plan artifact"]
+    Push -->|"frontend/** changed on main"| FrontendDeploy["frontend-deploy\nbuild Docker, push to AR\ndeploy to Cloud Run"]
+    Validate -->|"develop push"| Staging["Deploy Staging\nauto-apply plan"]
+    Validate -->|"main push"| ProdGate["Production Approval Gate"]
+    ProdGate -->|"approved"| Prod["Deploy Production\napply plan"]
+
+    style Validate fill:#1d4ed8,color:#fff
+    style FrontendDeploy fill:#7c3aed,color:#fff
+    style Staging fill:#059669,color:#fff
+    style Prod fill:#dc2626,color:#fff
+    style ProdGate fill:#d97706,color:#fff
+```
+
+## Students
+
 - Samuel
 - Elyazid
 - Ouidad
 
-## 📋 Project Description
+Supervisor: Brendan Gouin 
 
-This project aims to design, deploy, and maintain a Cloud Native automation architecture using DevOps principles. The goal is to create a real-time data processing and translation pipeline using n8n and AI models, implementing modern pillars of Cloud engineering:
+## Stack
 
-- **Serverless Containers** (GCP Cloud Run / AWS App Runner) for code execution
-- **Infrastructure as Code (Terraform)** for reproducible cloud environment provisioning
-- **Dagger.io** for CI/CD workflow composition and execution
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14, Tailwind CSS, deployed on Cloud Run |
+| Workflow engine | n8n, deployed on Cloud Run |
+| Database | Neon (serverless PostgreSQL) |
+| Infrastructure | Terraform (GCP provider + Neon provider) |
+| Secrets | GCP Secret Manager |
+| CI/CD | GitHub Actions + Terraform workspaces |
+| Local dev | Docker Compose |
+| Package manager | Bun |
 
-The system is fully **stateless** and relies on an external database for persistence, simulating a production-ready architecture.
+## Repository structure
 
-## 🎯 Learning Objectives
-
-By completing this project, students will acquire:
-
-- **DevOps & IaC**: Master Terraform for cloud infrastructure management
-- **Cloud Native Architecture**: Design and deploy Microservices (Compute vs. State) and Serverless architectures
-- **CI/CD Development**: Set up continuous integration and continuous delivery pipelines using Dagger.io and GitHub Actions
-
-## 🛠️ Technologies
-
-| Category | Technologies |
-|----------|-------------|
-| **Infrastructure** | Terraform (HCL), Dagger.io (CI/CD workflows), GitHub Actions, Cloud CLI (gcloud/aws cli) |
-| **Server** | Google Cloud Run, AWS App Runner / Fargate, Docker (optimized n8n image) |
-| **Storage** | PostgreSQL (Neon/Supabase), AWS S3 / Google Storage |
-| **Application** | n8n (Workflow Engine), AI APIs (OpenAI, DeepL, etc.), Frontend (React / Vue) |
-
-## 📚 Work Breakdown
-
-### Phase 1: Infrastructure as Code (IaC) with Terraform
-
-**Objectives:**
-- Define the Cloud environment (Network, Security Groups) using HCL
-- Provision Cloud services declaratively (Cloud Run/App Runner) and external Database (Neon/Supabase)
-- Manage Terraform state and Cloud secrets (Security)
-
-**Tasks:**
-- [ ] Set up Terraform project structure
-- [ ] Configure Terraform backend (remote state)
-- [ ] Define network and security configurations
-- [ ] Create Cloud Run / App Runner service definitions
-- [ ] Set up external PostgreSQL database (Neon/Supabase)
-- [ ] Implement secret management for sensitive data
-- [ ] Test infrastructure provisioning and teardown
-
-**Deliverables:**
-- Terraform configuration files
-- Infrastructure documentation
-- State management setup
-
-### Phase 2: Serverless Architecture & Persistence
-
-**Objectives:**
-- Strict separation of Compute (n8n Docker) and State (Database)
-- Configure n8n container to connect to external database via secure environment variables
-- Set up Managed or Serverless Database service (e.g., Neon/Supabase)
-
-**Tasks:**
-- [ ] Create optimized Docker image for n8n
-- [ ] Configure n8n to use external PostgreSQL database
-- [ ] Set up database connection via environment variables
-- [ ] Test stateless container behavior
-- [ ] Verify data persistence in external database
-- [ ] Implement connection pooling and retry logic
-
-**Deliverables:**
-- Dockerfile for n8n
-- Database configuration
-- Connection documentation
-
-### Phase 3: CI/CD & Deployment
-
-**Objectives:**
-- Set up Dagger.io for CI/CD workflow composition and execution
-- Integrate Dagger workflows with GitHub Actions for Continuous Delivery
-- Workflow should rebuild n8n Docker image, push to Container Registry, then trigger Terraform to deploy new version on Cloud Run/App Runner
-
-**Tasks:**
-- [ ] Initialize Dagger project: `dagger init`
-- [ ] Create Dagger functions for build, test, and deploy workflows
-- [ ] Write Dagger workflows using Dagger SDK (TypeScript, Python, or Go)
-- [ ] Configure Docker image build and push to registry via Dagger
-- [ ] Integrate Terraform execution in Dagger workflows
-- [ ] Set up GitHub Actions to call Dagger functions
-- [ ] Set up automated testing in pipeline
-- [ ] Implement deployment strategies (blue/green, canary)
-- [ ] Add rollback mechanisms
-- [ ] Configure notifications for deployment status
-- [ ] Test workflows locally with `dagger do` before CI execution
-
-**Deliverables:**
-- Dagger module with workflow functions
-- GitHub Actions workflow files (calling Dagger)
-- CI/CD pipeline documentation
-- Deployment runbook
-
-### Phase 4: Workflow Orchestration (n8n)
-
-**Objectives:**
-- Design an API integration workflow (e.g., Micro / Speech-to-Text / Translation / Response)
-- Optimize performance and manage latency (Cold Start)
-
-**Tasks:**
-- [ ] Design n8n workflow for data processing/translation
-- [ ] Integrate AI APIs (OpenAI, DeepL, etc.)
-- [ ] Implement error handling and retry logic
-- [ ] Optimize workflow for cold start performance
-- [ ] Add monitoring and logging
-- [ ] Create frontend interface (React/Vue) for workflow management
-- [ ] Test end-to-end workflow execution
-
-**Deliverables:**
-- n8n workflow definitions
-- API integration documentation
-- Frontend application (optional)
-- Performance optimization report
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-1. **GitHub Student Pack**: Get access at https://education.github.com/pack
-2. **Cloud Provider Account**: Set up GCP or AWS account (free tier available)
-3. **Development Tools**: 
-   - **Bun**: Install Bun package manager: `curl -fsSL https://bun.sh/install | bash` or `brew install bun`
-   - **Terraform**: `brew install terraform` or follow [Terraform installation guide](https://developer.hashicorp.com/terraform/downloads)
-   - **Docker**: `brew install docker` or download from [Docker Desktop](https://www.docker.com/products/docker-desktop)
-   - **Dagger CLI**: `brew install dagger/tap/dagger` or follow [Dagger installation guide](https://docs.dagger.io/install)
-   - **Cloud CLI tools**: 
-     - GCP: `brew install google-cloud-sdk` then run `gcloud init`
-     - AWS: `brew install awscli` then run `aws configure`
-
-### Quick Start
-
-#### 1. Clone the repository
-```bash
-git clone <repository-url>
-cd poly-cloudops
+```
+frontend/        Next.js application
+terraform/       Infrastructure as Code (GCP + Neon)
+workflows/       n8n workflow JSON exports
+bootstrap/       SQL and JS scripts to initialize the n8n admin user
+init_db/         SQL run on local Postgres startup
+.github/         GitHub Actions workflows
+.husky/          Git hooks (commit-msg, pre-push, post-checkout)
+docs/            Supplementary documentation
 ```
 
-#### 2. Install dependencies (automatically sets up git hooks)
-```bash
-bun install
-```
+## Quickstart (local)
 
-> **Note:** This automatically installs Husky and sets up git hooks via the `prepare` script. No manual setup needed!
-
-#### 3. Configure environment variables
-
-Create a `.env` file from the template:
+See `docs/running-locally.md` for the full walkthrough.
 
 ```bash
-cp .env.example .env
+bun install                  # installs deps and sets up git hooks
+cp .env.development .env     # fill in your credentials
+docker compose up -d
 ```
 
-Edit `.env` and configure the following required variables:
+The n8n UI is at http://localhost:5678, the frontend at http://localhost:3000.
 
-⚠️You need to generate your own `N8N_ENCRYPTION_KEY` using the command :
+## Branches
 
-```bash
-openssl rand -base64 24 
-```
+| Branch | Purpose |
+|---|---|
+| `main` | Stable, production-ready. CI deploys to production on merge. |
+| `develop` | Integration branch. CI deploys to staging on merge. |
+| `feat/frontend` | Frontend development |
+| `feat/terraform-cloud-infrastructure` | Terraform / GCP work |
+| `ci/*` | CI/CD pipeline work |
 
-```bash
-# Database Configuration
-DB_HOST=your_neon_or_supabase_host
-DB_PORT=5432
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_SSL=true
+Branch names follow the conventional commits format (`<type>/<description>`). The `pre-push` hook blocks pushes with invalid names.
 
-# n8n Configuration
-N8N_BASIC_AUTH_ACTIVE=true
-N8N_ENCRYPTION_KEY=your_generated_n8n_encryption_key
+## Commit format
 
-# AI API Tokens (required for workflow execution)
-DEEPL_API_KEY=your_deepl_api_key
-```
-
-> ⚠️ **Security Note:** Never commit `.env` files to version control. The `.gitignore` file already excludes them.
-
-#### 4. Start the project with Docker Compose
-
-Launch n8n and its dependencies locally:
-
-```bash
-docker-compose up -d
-```
-
-This will start:
-- **n8n** service: http://localhost:5678
-- **PostgreSQL** database (if configured locally)
-
-To view logs:
-```bash
-docker-compose logs -f
-```
-
-To stop the services:
-```bash
-docker-compose down
-```
-
-#### 5. Access n8n
-
-Once Docker Compose is running:
-- Open your browser and navigate to: http://localhost:5678
-- Log in with your credentials set in `.env` (`N8N_BASIC_AUTH_USER` / `N8N_BASIC_AUTH_PASSWORD`)
-- Import or create workflows from the `workflows/` directory
-
-#### 6. Review the project structure
-
-- `docker/` - Docker configuration for n8n
-- `.github/workflows/` - GitHub Actions workflows (calling Dagger)
-- `workflows/` - n8n workflow definitions
-- `init_db/` - Database initialization scripts
-- `.husky/` - Git hooks (automatically installed via Husky)
-
-#### 7. Follow the phase-by-phase work breakdown above
-
-## n8n User Setup (Password Hashing)
-
-n8n uses **bcrypt** to hash admin passwords. The password hashing is now **automatically handled by PostgreSQL** during database initialization.
-
-### Automatic Password Hashing
-
-The `bootstrap/setup-n8n.sql` script uses PostgreSQL's `pgcrypto` extension to generate bcrypt hashes automatically:
-
-```sql
--- Enable pgcrypto extension for password hashing
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- Update user with hashed password (bcrypt with 10 rounds)
-UPDATE "user" 
-SET email = :'admin_email', 
-    password = crypt(:'admin_password', gen_salt('bf', 10)),
-    "roleSlug" = 'global:owner', 
-    "updatedAt" = NOW() 
-WHERE "roleSlug" = 'global:owner' OR email IS NULL OR email = '';
-```
-
-### Configuration
-
-Simply set your admin credentials in the `.env` file:
-
-```env
-N8N_ADMIN_EMAIL=admin@cloudops.com
-N8N_ADMIN_PASSWORD=YourSecurePassword123!
-```
-
-The password will be automatically hashed using bcrypt (10 rounds) when the database is initialized via `docker-compose up`.
-
-> **Note:** You no longer need to manually generate password hashes or use external scripts. PostgreSQL handles this securely during setup.
-
-## 📝 Commit Message Format
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. The format is enforced via git hooks.
-
-### Format
+This project enforces [Conventional Commits](https://www.conventionalcommits.org/). The `commit-msg` hook rejects invalid messages.
 
 ```
 <type>(<scope>): <subject>
-
-<body>
-
-<footer>
 ```
 
-### Types
+Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
 
-- `feat`: A new feature
-- `fix`: A bug fix
-- `docs`: Documentation only changes
-- `style`: Changes that do not affect the meaning of the code
-- `refactor`: A code change that neither fixes a bug nor adds a feature
-- `perf`: A code change that improves performance
-- `test`: Adding missing tests or correcting existing tests
-- `build`: Changes that affect the build system or external dependencies
-- `ci`: Changes to CI configuration files and scripts
-- `chore`: Other changes that don't modify src or test files
-- `revert`: Reverts a previous commit
+## Documentation
 
-### Examples
+- `docs/running-locally.md` — how to run the full stack locally from scratch
+- `docs/scaling-and-architecture.md` — Cloud Run scaling, load balancing, serverless cold starts
+- `docs/workflows.md` — n8n workflow inventory and how to add a new one
+- `docs/ci-cd.md` — CI/CD pipeline, Terraform workspaces, deployment environments
 
-```bash
-feat(terraform): add cloud run service configuration
-fix(dagger): resolve docker image build caching issue
-docs(readme): update getting started instructions
-ci(github): add dagger workflow for automated deployment
-```
+## License
 
-### Setup
-
-**Automatic Setup:** Git hooks are automatically installed when you run `bun install` thanks to Husky's `prepare` script. No manual setup needed!
-
-The setup process:
-1. When you run `bun install`, the `prepare` script automatically runs
-2. Husky installs git hooks from `.husky/` directory
-3. The `commit-msg` hook validates your commit messages against Conventional Commits format
-4. Git commit template is configured automatically
-
-The git hook enforces the commit format and will reject invalid commit messages. See `.gitmessage` for the full template and guidelines.
-
-**Note:** This project uses [Bun](https://bun.sh) as the package manager. Make sure you have Bun installed before running `bun install`.
-
-## 📖 Documentation
-
-- See `AGENTS.md` for detailed development instructions and best practices
-- Check `spec/Projet polytech angers.pdf` for the complete project specification
-
-## 🔗 Useful Links
-
-- [Dagger Documentation](https://docs.dagger.io/) - CI/CD workflow platform
-- [Dagger Installation](https://docs.dagger.io/install) - Install Dagger CLI
-- [Dagger SDKs](https://docs.dagger.io/sdks) - Language-specific SDKs for writing workflows
-- [Daggerverse](https://daggerverse.dev/) - Community module registry
-- [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
-- [n8n Documentation](https://docs.n8n.io/hosting/)
-- [Neon PostgreSQL](https://neon.com/docs/introduction)
-- [Google Cloud Run](https://cloud.google.com/run?hl=fr)
-- [AWS Fargate](https://aws.amazon.com/fr/fargate/)
-- [GCP vs AWS CaaS Comparison](https://dev.to/yash_sonawane25/aws-fargate-vs-google-cloud-run-serverless-container-wars-585p)
-
-## 👥 Contact
-
-**Supervisor:** Brendan Gouin
-
-- 📧 Email: brendan.gouin.pro@gmail.com
-- 📞 Phone: 07 83 38 83 02
-- 🖼️ LinkedIn: [www.linkedin.com/in/brendan-gouin](https://www.linkedin.com/in/brendan-gouin)
-- 🌐 GitHub: [https://github.com/brendanPro](https://github.com/brendanPro)
-
-## 📝 License
-
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+GNU General Public License v3.0

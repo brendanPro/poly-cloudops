@@ -1,67 +1,48 @@
-import TopNavbar from '@/app/ui/TopNavbar';
-import StatsCard from '@/app/ui/StatsCard';
+import Link from 'next/link';
+import { getActiveWorkflows } from '@/lib/workflows';
 import WorkflowCard from '@/app/ui/WorkflowCard';
-import {getStats, getActiveWorkflows} from '@/lib/workflows';
 
 export default function HomePage() {
-  const stats = getStats();
-  const activeWorkflows = getActiveWorkflows();
+  const workflows = getActiveWorkflows();
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
-      {/* Hero Section */}
-      <section className="gradient-hero-bg py-20 px-4">
-        <div className="max-w-7xl mx-auto text-center text-white animate-fade-in">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight">
+    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+      {/* Hero */}
+      <section className="gradient-hero-bg py-24 px-4">
+        <div className="max-w-4xl mx-auto text-center animate-fade-in">
+          <p className="section-label text-slate-400 mb-4">Polytech Angers — Cloud Native DevOps</p>
+          <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-5 leading-tight">
             Workflow Automation Hub
           </h1>
-          <p className="text-xl md:text-2xl opacity-90 max-w-3xl mx-auto leading-relaxed">
-            Cloud native automation with n8n, serverless, and Dagger.io
+          <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Cloud-native automation powered by n8n and serverless infrastructure on GCP.
           </p>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          <StatsCard
-            value={stats.total}
-            label="Total Workflows"
-            gradient="primary"
-          />
-          <StatsCard
-            value={stats.active}
-            label="Active Workflows"
-            gradient="secondary"
-          />
-          <StatsCard
-            value={stats.totalRuns}
-            label="Total Runs"
-            gradient="accent"
-          />
+      {/* Workflows grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--foreground)' }}>
+            Available Workflows
+          </h2>
+          <p style={{ color: 'var(--foreground-muted)' }}>
+            {workflows.length} workflow{workflows.length !== 1 ? 's' : ''} ready to use
+          </p>
         </div>
-      </section>
 
-      {/* Workflows Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
-          Available Workflows
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-          Choose a workflow to get started
-        </p>
-
-        {activeWorkflows.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {activeWorkflows.map((workflow) => (
+        {workflows.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {workflows.map((workflow) => (
               <WorkflowCard key={workflow.id} workflow={workflow} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-gray-100 dark:bg-gray-800 rounded-2xl">
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
-              No active workflows found.
-            </p>
+          <div
+            className="text-center py-20 rounded-2xl"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <p style={{ color: 'var(--foreground-muted)' }}>No active workflows found.</p>
           </div>
         )}
       </section>

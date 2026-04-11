@@ -1,1 +1,1 @@
-export {workflows, getWorkflowById, getWorkflowsByCategory, getActiveWorkflows, getStats} from './workflows-data';
+export {workflows, getWorkflowById, getWorkflowsByCategory, getActiveWorkflows} from './workflows-data';

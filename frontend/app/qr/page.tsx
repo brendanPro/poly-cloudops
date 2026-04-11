@@ -4,17 +4,16 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 export default function QRPage() {
-  const [data, setData] = useState('https://poly-cloudops.dev');
+  const [data, setData] = useState('');
   const [imageSrc, setImageSrc] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!data.trim()) {
-      setError('Please provide text or a URL to encode.');
+      setError('Enter text or a URL to encode.');
       return;
     }
-
     setLoading(true);
     setError(null);
     setImageSrc('');
@@ -25,10 +24,8 @@ export default function QRPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data }),
       });
-
       const json = await resp.json();
       if (!resp.ok) throw new Error(json?.error || 'Failed to generate QR code');
-
       setImageSrc(json.image || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error');
@@ -37,58 +34,111 @@ export default function QRPage() {
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-6">
-      <header>
-        <p className="text-sm uppercase font-semibold tracking-widest text-accent-500">
-          Automation
-        </p>
-        <h1 className="text-4xl font-bold mt-2 mb-4">QR Code Generator</h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
-          Send any text or URL to the n8n workflow to get a QR code instantly.
-        </p>
-      </header>
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleGenerate();
+    }
+  };
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-            Data to encode
-          </label>
-          <textarea
-            className="w-full p-4 border rounded-2xl bg-white/80 dark:bg-gray-900/50 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            rows={6}
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            placeholder="https://... or any text"
-          />
+  return (
+    <div className="page-container">
+      <div className="mb-8">
+        <p className="section-label mb-2">Automation</p>
+        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+          QR Code Generator
+        </h1>
+        <p style={{ color: 'var(--foreground-muted)' }}>
+          Encode any text or URL into a QR code image, generated via n8n.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 items-start">
+        {/* Input */}
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--foreground)' }}>
+              Content to encode
+            </label>
+            <textarea
+              className="input"
+              rows={6}
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="https://example.com or any text..."
+            />
+            <p className="text-xs mt-1.5" style={{ color: 'var(--foreground-subtle)' }}>
+              Press Enter to generate
+            </p>
+          </div>
+
           <button
-            className="w-full py-3 px-6 rounded-2xl text-white font-semibold text-center bg-gradient-to-r from-gray-900 via-purple-900 to-indigo-900 hover:opacity-90 transition disabled:opacity-60"
+            className="btn btn-primary"
             onClick={handleGenerate}
-            disabled={loading}
+            disabled={loading || !data.trim()}
           >
-            {loading ? 'Generating…' : 'Generate QR Code'}
+            {loading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Generating...
+              </>
+            ) : (
+              'Generate QR code'
+            )}
           </button>
 
-          {error && (
-            <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-xl">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-box">{error}</div>}
         </div>
 
-        <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-6 bg-white/60 dark:bg-gray-900/30 min-h-[320px]">
+        {/* Preview */}
+        <div
+          className="result-panel items-center justify-center"
+          style={{ minHeight: '16rem', border: '1px solid var(--border)' }}
+        >
           {imageSrc ? (
-            <Image
-              src={imageSrc}
-              alt="Generated QR code"
-              width={224}
-              height={224}
-              className="w-56 h-56 object-contain"
-            />
+            <div className="flex flex-col items-center gap-4 p-6">
+              <Image
+                src={imageSrc}
+                alt="Generated QR code"
+                width={220}
+                height={220}
+                className="rounded-lg"
+                style={{ imageRendering: 'pixelated' }}
+              />
+              <a
+                href={imageSrc}
+                download="qrcode.png"
+                className="btn btn-ghost text-sm"
+              >
+                Download
+              </a>
+            </div>
           ) : (
-            <p className="text-gray-500 text-center">
-              QR preview will appear here after you trigger the workflow.
-            </p>
+            <div className="flex items-center justify-center flex-1 p-8 text-center">
+              <div>
+                <svg
+                  className="w-12 h-12 mx-auto mb-3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1}
+                  style={{ color: 'var(--border)' }}
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <path d="M14 14h3v3h-3z" />
+                  <path d="M17 17h4M21 14v3M14 21h7" />
+                </svg>
+                <p className="text-sm" style={{ color: 'var(--foreground-subtle)' }}>
+                  QR code preview
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>

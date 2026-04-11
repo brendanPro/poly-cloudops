@@ -14,5 +14,5 @@ export interface Workflow {
   };
   gradient: [string, string];
   path: string;
-  icon: string;
+  iconKey: 'translate' | 'qr' | 'spreadsheet' | 'ai' | 'weather' | 'currency';
 }
