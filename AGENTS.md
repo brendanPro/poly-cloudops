@@ -1,273 +1,224 @@
 # AGENTS.md
 
-## Project Overview
+Context and instructions for LLMs working on this codebase.
 
-Poly-CloudOps is a Cloud Native automation architecture project that implements a real-time data processing and translation pipeline using DevOps principles. The system uses n8n for workflow orchestration, serverless containers (GCP Cloud Run / AWS App Runner), Infrastructure as Code (Terraform) for reproducible cloud provisioning, and Dagger.io for CI/CD workflow composition and execution.
+## What this project is
 
-The architecture is fully stateless, relying on external databases (Neon/Supabase) for persistence, simulating a production-ready environment.
+Poly-CloudOps is a school project (Polytech Angers) that teaches cloud-native DevOps by building and operating a real application. The project is an **n8n workflow automation hub**: a Next.js frontend where users trigger n8n workflows (translation, QR codes, JSON-to-Excel, AI summarization, weather, currency conversion) via webhooks.
 
-## Setup Commands
+The infrastructure is on GCP. n8n and the frontend each run as separate Cloud Run services. The database is Neon (serverless PostgreSQL). Secrets live in GCP Secret Manager. Terraform provisions everything. GitHub Actions deploys it.
 
-### Prerequisites
+## Repository layout
 
-- Install Bun: `curl -fsSL https://bun.sh/install | bash` or `brew install bun` (required for package management and git hooks)
-- Install Terraform: `brew install terraform` (macOS) or follow [Terraform installation guide](https://developer.hashicorp.com/terraform/downloads)
-- Install Docker: `brew install docker` or download from [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- Install Cloud CLI tools:
-  - GCP: `brew install google-cloud-sdk` then run `gcloud init`
-  - AWS: `brew install awscli` then run `aws configure`
-- Install GitHub CLI: `brew install gh` then run `gh auth login`
-- Install Dagger CLI: `brew install dagger/tap/dagger` or follow [Dagger installation guide](https://docs.dagger.io/install)
+```
+frontend/            Next.js 14 app (the user-facing hub)
+  app/               Next.js app router pages and API routes
+    page.tsx         Home page, lists all workflows
+    [workflow]/      One subdirectory per workflow (translate, qr, json-to-excel, summarize, weather, currency)
+    api/[workflow]/  Server-side API routes that proxy to n8n webhooks
+    ui/              Shared components (TopNavbar, WorkflowCard, StatsCard)
+    ui/globals.css   Design system (CSS variables, utility classes, animations)
+  lib/               Shared data (workflows-data.ts is the single source of truth for workflow metadata)
+  types/             TypeScript types (workflow.ts)
+  Dockerfile         Multi-stage build (Bun builder + Node runner), outputs standalone Next.js
+  next.config.mjs    Standalone output mode
 
-### Initial Setup
+terraform/           GCP + Neon infrastructure
+  main.tf            Locals, API enablement
+  providers.tf       google, google-beta, neon, postgresql, null, random
+  backend.tf         GCS remote state (bucket: polycloudops-terraform-state)
+  versions.tf        Provider version pins
+  cloudrun.tf        Cloud Run service for n8n (image: n8nio/n8n:2.10.4)
+  database.tf        Neon project/database/role + Secret Manager secret versions + bootstrap null_resource
+  iam.tf             Service accounts, IAM bindings
+  network.tf         VPC, subnet, firewall rules
+  security.tf        References to manually-created secrets (n8n-encryption-key, deepl-api-key)
+  storage.tf         Optional Cloud Storage bucket
+  outputs.tf         All Terraform outputs
 
-- Clone the repository and navigate to the project directory
-- **Install dependencies**: Run `bun install` (automatically sets up git hooks via Husky's prepare script)
-- Set up GitHub Student Pack credentials: https://education.github.com/pack
-- Configure cloud provider credentials (GCP or AWS)
-- Initialize Dagger: `dagger init` (if not already initialized)
-- Create a `.env.example` file and copy it to `.env` with your secrets
-- Never commit `.env` files or secrets to version control
+workflows/           n8n workflow JSON exports (importable into n8n)
+  translate-text-deepl.json
+  ai-text-summarizer.json
+  json-to-excel.json
 
-**Note:** Git hooks are automatically installed via Husky when running `bun install`. The `prepare` script in package.json ensures hooks are set up for all developers automatically.
+bootstrap/
+  setup-n8n.sql      Sets n8n admin user and disables first-run setup via pgcrypto
+  steps/insertUserSql.js  JS alternative (legacy)
 
-### GitHub Actions Setup
+init_db/
+  init.sql           Creates translations table on local Postgres startup
 
-**Configuring Workload Identity Federation** (for CI/CD authentication):
+.github/workflows/
+  terraform-validate.yml  3-job pipeline: validate -> deploy staging -> deploy production
+  frontend-deploy.yml     Build + push frontend Docker image -> deploy to Cloud Run
 
-This project uses Workload Identity Federation (WIF) for keyless authentication to Google Cloud from GitHub Actions. The WIF provider and GitHub secrets are managed by Terraform and configured in the CI pipeline.
+.husky/
+  commit-msg         Enforces Conventional Commits format (blocks invalid messages)
+  pre-push           Blocks pushes from branches with non-conventional names
+  post-checkout      Warns (does not block) on checkout to non-conventional branch names
 
-**Workflow Files**:
-- `.github/workflows/terraform-validate.yml` - Terraform validation and planning
-
-## Build and Test Commands
-
-### Terraform Commands
-
-- Initialize Terraform: `terraform init`
-- Validate Terraform configuration: `terraform validate`
-- Plan infrastructure changes: `terraform plan`
-- Apply infrastructure: `terraform apply`
-- Destroy infrastructure: `terraform destroy` (use with caution)
-- Format Terraform files: `terraform fmt -recursive`
-
-### Dagger Commands
-
-- Initialize Dagger: `dagger init`
-- Run Dagger workflows: `dagger do <function-name>`
-- Test workflows locally: `dagger do build` or `dagger do test`
-- List available functions: `dagger functions list`
-- Develop interactively: `dagger shell` (opens interactive shell)
-- Visualize workflow: `dagger do <function> --with-terminal-ui` (TUI mode)
-- Check Dagger version: `dagger version`
-
-### CI/CD Testing
-
-- Test Dagger workflows locally before pushing: `dagger do <workflow-name>`
-- Test GitHub Actions workflows locally: `act` (optional, requires Docker)
-- Validate workflow syntax: Check `.github/workflows/*.yml` files
-- **Manual workflow trigger**: GitHub → Actions → Terraform Validation → Run workflow
-- View workflow runs: GitHub → Actions tab
-- Check PR comments: Terraform plan output appears automatically on PRs
-- **Authentication testing**: Verify WIF authentication in workflow logs (no credentials should appear)
-- Always test workflows in a branch before merging to main
-- Use Dagger for consistent local and CI execution
-
-## Code Style Guidelines
-
-### Terraform (HCL)
-
-- Use consistent indentation (2 spaces)
-- Group related resources with comments
-- Use variables for all configurable values
-- Store sensitive values in Terraform Cloud/state or environment variables
-- Follow naming conventions: `resource_type_name` (e.g., `google_cloud_run_service_n8n`)
-- Use `terraform fmt` before committing
-
-### Dagger
-
-- Write workflows as Dagger Functions using Dagger SDKs (TypeScript, Python, Go, etc.)
-- Use Dagger types (Container, Directory, File) for type-safe workflows
-- Leverage automatic caching for faster builds
-- Create reusable Dagger modules for common operations
-- Use Dagger secrets integration for secure credential handling
-- Test workflows locally with `dagger do` before CI execution
-- Structure workflows as composable functions
-
-### GitHub Actions
-
-- Use Dagger in GitHub Actions for consistent local/CI execution
-- Call Dagger functions from GitHub Actions workflows
-- Use reusable workflows when possible
-- Store secrets in GitHub Secrets, never hardcode
-- Use matrix strategies for multi-cloud testing
-- Add proper error handling and notifications
-
-### General
-
-- Write clear commit messages following [Conventional Commits](https://www.conventionalcommits.org/) format
-- Format: `<type>(<scope>): <subject>`
-- Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-- Commit message format is enforced via git hooks (see `.husky/commit-msg`)
-- For conventional commits we are using Husky version 9+, so the line `. "$(dirname -- "$0")/_/husky.sh"` is unnecessary in hook scripts and is obsolete ( can break version 10 )
-#### Branch Naming Convention
-
-Branch names must follow conventional commit types for consistency:
-
-- **Format**: `<type>/<description>` or `<type>/<scope>/<description>`
-- **Valid types**: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-- **Rules**:
-  - Use kebab-case (lowercase with hyphens) for descriptions
-  - No uppercase letters, spaces, or special characters
-  - Description should be concise and meaningful
-  - Protected branches (main, master, develop, staging, production) are exempt
-
-**Examples**:
-- `feat/user-authentication` - New feature for user authentication
-- `fix/api/connection-timeout` - Bug fix for API connection timeout (with scope)
-- `docs/update-readme` - Documentation update
-- `ci/dagger/add-build-workflow` - CI workflow addition (with scope)
-- `refactor/terraform/cloud-run-service` - Refactoring Terraform code (with scope)
-- `test/integration-tests` - Adding integration tests
-
-**Enforcement**:
-- `post-checkout` hook: Displays a friendly warning when you checkout/create a branch with an invalid name, with instructions to rename it
-- `pre-push` hook: Blocks the push if the branch name doesn't follow the convention (hard enforcement)
-
-#### Other Guidelines
-
-- Use meaningful variable and resource names
-- Add comments for complex logic or non-obvious decisions
-- Keep functions and modules focused and small
-
-## Testing Instructions
-
-### Infrastructure Testing
-
-- Run `terraform validate` before every commit
-- Use `terraform plan` to preview changes
-- Test in a development environment before production
-- Verify all resources are created correctly after `terraform apply`
-- Check Terraform state file is properly managed (use remote state)
-
-### Application Testing
-
-- Test n8n workflows locally before deploying
-- Verify database connections work with external PostgreSQL
-- Test API integrations (OpenAI, DeepL, etc.) with mock data first
-- Validate environment variables are correctly passed to containers
-
-### CI/CD Testing
-
-**GitHub Actions Workflow** (`.github/workflows/terraform-validate.yml`):
-- Validation runs on all PRs to `develop` or `main`
-- Staging deploys automatically on push to `develop`
-- Production deploys on push to `main` (requires manual approval)
-
-**Manual workflow trigger**: GitHub → Actions → Terraform CI/CD Pipeline → Run workflow
-
-**Verify deployment**:
-- Check PR comments for Terraform plan output
-- View workflow runs in GitHub Actions tab
-- Verify WIF authentication in logs (no credentials should appear)
-
-**Terraform Workspaces**:
-```bash
-terraform workspace list              # Show all workspaces
-terraform workspace select staging    # Switch to staging
-terraform workspace select default    # Switch to production (default workspace)
-terraform workspace show              # Show current workspace
+docs/                Supplementary documentation for collaborators
 ```
 
-**Note**: The `default` workspace is used for production infrastructure, while `staging` uses environment-specific resource naming with `-staging` suffix.
+## Architecture
 
-**Dagger.io**: Planned for future phase (see separate branch)
-- Test Dagger workflows locally: `dagger do <workflow-name>` before pushing
-- Use Dagger's built-in observability to debug workflow issues
+```
+User browser
+    |
+    v
+Cloud Run: frontend-service (Next.js, port 3000)
+    |
+    | POST /api/<workflow>  (server-side, env var webhook URLs)
+    v
+Cloud Run: n8n-service (n8n, port 5678)
+    |
+    | varies by workflow
+    v
+External APIs: DeepL, OpenRouter, Open-Meteo, ExchangeRate-API
+    |
+    v (translation workflow only)
+Neon PostgreSQL (public.translations table)
+```
 
-### Security Testing
+Secrets (db credentials, n8n encryption key, DeepL key) are stored in GCP Secret Manager and mounted as env vars in the Cloud Run n8n service.
 
-- Never commit secrets or API keys
-- Use Terraform Cloud or secure secret management
-- Verify IAM roles and permissions are minimal (least privilege)
-- Test that database connections use SSL/TLS
-- Review and rotate credentials regularly
+The frontend never talks directly to external APIs or the database. All calls go through n8n webhooks.
 
-## Security Considerations
+## How the frontend works
 
-- **Secrets Management**: Use GitHub Secrets for CI/CD, Terraform Cloud for IaC secrets
-- **Database Security**: Always use connection strings with SSL enabled
-- **IAM Permissions**: Follow least privilege principle for all cloud resources
-- **Container Security**: Scan Docker images for vulnerabilities before deployment
-- **Network Security**: Configure security groups and VPCs appropriately
-- **State Management**: Use remote Terraform state with encryption
-- **API Keys**: Store in secure vaults, never in code or version control
+Each workflow follows the same pattern:
 
-## Deployment Steps
+1. `frontend/lib/workflows-data.ts` — defines the workflow metadata (id, name, path, color, icon, status)
+2. `frontend/app/[workflow]/page.tsx` — client component, calls `/api/[workflow]`
+3. `frontend/app/api/[workflow]/route.ts` — server-side API route, reads the webhook URL from env, proxies to n8n, normalizes the response
 
-### Initial Deployment
+To add a new workflow:
+1. Add an entry to `workflows-data.ts`
+2. Create `app/[workflow]/page.tsx`
+3. Create `app/api/[workflow]/route.ts`
+4. Add the webhook URL secret to GitHub Secrets and to `frontend-deploy.yml`
+5. Export the n8n workflow JSON to `workflows/`
 
-1. Set up cloud provider account and billing
-2. Create container registry (GCR/ECR)
-3. Initialize Terraform with remote state backend
-4. Configure GitHub Secrets for CI/CD
-5. Set up external database (Neon/Supabase)
-6. Run `terraform apply` to create infrastructure
-7. Build and push Docker image to registry
-8. Deploy n8n service via Terraform
+## How Terraform is structured
 
-### CI/CD Deployment Flow
+Terraform uses **workspaces** for environment isolation:
+- `default` workspace = production (no resource name suffix)
+- `staging` workspace = staging (resources get `-staging` suffix via `local.env_suffix`)
 
-1. Push code to repository
-2. GitHub Actions triggers on push to main
-3. Dagger workflow executes (via `dagger do` in GitHub Actions)
-4. Dagger builds Docker image from Dockerfile
-5. Dagger pushes image to container registry
-6. Dagger runs `terraform plan` to preview changes
-7. Dagger runs `terraform apply` to update Cloud Run/App Runner
-8. Verify deployment health and rollback if needed
-9. Use Dagger Cloud (optional) for workflow visualization and insights
+The workspace is selected automatically by GitHub Actions based on the branch:
+- push to `main` -> `default` workspace -> production deploy (requires manual approval via GitHub environment gate)
+- push to `develop` -> `staging` workspace -> staging deploy (automatic)
 
-### Manual Deployment
+Secrets that must be created manually in GCP Secret Manager before `terraform apply`:
+- `n8n-encryption-key`
+- `deepl-api-key`
 
-- Build image: `docker build -t n8n-custom:latest ./docker`
-- Tag image: `docker tag n8n-custom:latest <registry>/n8n-custom:<version>`
-- Push image: `docker push <registry>/n8n-custom:<version>`
-- Update Terraform variables with new image version
-- Apply Terraform: `terraform apply`
+Secrets created and updated automatically by Terraform (from Neon outputs):
+- `db-host`, `db-user`, `db-password`, `db-database`, `n8n-db-connection-string`
 
-## Workflow Development (n8n)
+WIF (Workload Identity Federation) is managed outside Terraform and referenced via `var.wif_provider_name` and `var.wif_service_account_email`.
 
-- Design workflows in n8n UI locally first
-- Export workflows as JSON files
-- Store workflow definitions in version control
-- Test workflows with sample data
-- Document workflow purpose and dependencies
-- Optimize for cold start performance (minimize initialization time)
+## Environment variables
+
+Local dev uses `.env.development` (copy to `.env` and fill in values). The frontend uses `.env.local` for development.
+
+Required for local dev (`.env`):
+- `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`
+- `N8N_ENCRYPTION_KEY` — generate with `openssl rand -base64 24`
+- `N8N_ADMIN_EMAIL`, `N8N_ADMIN_PASSWORD`
+- `DEEPL_API_KEY`
+
+Required for frontend local dev (`frontend/.env.local`):
+- `N8N_TRANSLATE_WEBHOOK_URL`
+- `N8N_QR_WEBHOOK_URL`
+- `N8N_JSON_EXCEL_WEBHOOK_URL`
+- `N8N_SUMMARIZE_WEBHOOK_URL`
+- `N8N_WEATHER_WEBHOOK_URL`
+- `N8N_CURRENCY_WEBHOOK_URL`
+
+## Key constraints and known quirks
+
+- **n8n version is pinned** to `2.10.4`. Do not change this without testing — n8n has breaking changes between minor versions.
+- **Artifact Registry is commented out** for the n8n service. The official Docker Hub image is used directly. The frontend uses Artifact Registry (`n8n-repo/frontend`).
+- **`next.config.mjs` only exposes 2 env vars** via the `env` block (translate and QR webhook URLs). The other 4 are server-only by design — they must not be exposed to the client.
+- **Translations are persisted to Neon** only by the translation workflow. Other workflows are stateless.
+- **The weather and currency n8n workflows are not committed** to `workflows/`. They exist only in the live n8n instance. Export and commit them if you make changes.
+- **`main.tf` and other `.tf` files on the `feat/frontend` branch are placeholders.** The real infrastructure code lives on `main`. Never edit infrastructure from the frontend branch.
+- **Husky version 9+** is used. Do not add `. "$(dirname -- "$0")/_/husky.sh"` to hook scripts — it is obsolete and will break on version 10.
+
+## Commit and branch conventions
+
+Commit format (enforced by `commit-msg` hook):
+```
+<type>(<scope>): <subject>
+```
+
+Branch format (enforced by `pre-push` hook):
+```
+<type>/<description>
+<type>/<scope>/<description>
+```
+
+Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+
+Protected branches exempt from branch naming: `main`, `master`, `develop`, `staging`, `production`
+
+## Build and run commands
+
+```bash
+# Install deps + set up git hooks
+bun install
+
+# Local full stack
+docker compose up -d
+
+# Frontend only (dev mode)
+cd frontend && bun dev
+
+# Frontend build
+cd frontend && bun run build
+
+# Terraform
+cd terraform
+terraform init
+terraform validate
+terraform fmt -recursive
+terraform plan
+terraform apply
+```
+
+## CI/CD
+
+Two GitHub Actions workflows:
+
+**`terraform-validate.yml`** — runs on PRs and pushes to `main`/`develop` when `terraform/**` changes:
+1. Validate: fmt check, init, validate, plan, encrypt plan with GPG, upload as artifact, comment on PR
+2. Deploy staging: downloads artifact, decrypts, applies (triggers on `develop` push)
+3. Deploy production: same but requires `environment: production` approval gate (triggers on `main` push)
+
+**`frontend-deploy.yml`** — runs on pushes to `main` when `frontend/**` changes:
+1. Validates all 7 webhook secrets are set
+2. Authenticates via WIF
+3. Builds and pushes Docker image to Artifact Registry
+4. Deploys to Cloud Run `frontend-service`
+
+Required GitHub Secrets: `GCP_WIF_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `PLAN_ENCRYPTION_KEY`, `NEON_API_KEY`, `NEON_ORG_ID`, `N8N_ADMIN_PASSWORD`, `TF_VAR_WIF_PROVIDER_NAME`, `TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL`, plus all 7 frontend webhook URL secrets.
 
 ## Troubleshooting
 
-- Check Terraform state: `terraform show`
-- View Cloud Run logs: `gcloud logging read` or AWS CloudWatch
-- Test database connection: Use `psql` or database client
-- Verify environment variables: Check container configuration
-- Review GitHub Actions logs: Check workflow run details
-- Check container registry: Verify image exists and is accessible
-- Debug Dagger workflows: Use `dagger do <function> --with-terminal-ui` for visualization
-- Check Dagger engine status: `dagger version` and ensure engine is running
-- View Dagger function logs: Check output from `dagger do` commands
+```bash
+# View n8n Cloud Run logs
+gcloud run services logs read n8n-service --region=europe-west1 --limit=50
 
-## Useful Resources
+# Check what Terraform knows about current state
+terraform show
 
-- [Dagger Documentation](https://docs.dagger.io/) - Primary CI/CD workflow platform
-- [Dagger Installation](https://docs.dagger.io/install) - Install Dagger CLI
-- [Dagger SDKs](https://docs.dagger.io/sdks) - Language-specific SDKs for writing workflows
-- [Dagger Modules](https://docs.dagger.io/modules) - Reusable workflow modules
-- [Daggerverse](https://daggerverse.dev/) - Community module registry
-- [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
-- [n8n Documentation](https://docs.n8n.io/hosting/)
-- [Neon PostgreSQL](https://neon.com/docs/introduction)
-- [Google Cloud Run](https://cloud.google.com/run?hl=fr)
-- [AWS Fargate](https://aws.amazon.com/fr/fargate/)
+# Test database connectivity
+psql "postgresql://<user>:<pass>@<neon-host>/n8n_db?sslmode=require"
+
+# Inspect running containers locally
+docker compose ps
+docker compose logs n8n -f
+```
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 

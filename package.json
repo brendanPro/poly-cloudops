@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "prepare": "husky && git config --local commit.template .gitmessage || true"
+    "prepare": "husky && git config --local commit.template .gitmessage || true",
+    "bootstrap": "bun bootstrap/bootstrap.js"
   },
   "devDependencies": {
     "husky": "^9.0.11",
@@ -11,5 +12,9 @@
     "axios-cookiejar-support": "^5.0.1",
     "tough-cookie": "^4.1.3",
     "dotenv": "^16.4.5"
+  },
+  "dependencies": {
+    "pg": "^8.17.2",
+    "bcryptjs": "^2.4.3"
   }
 }

@@ -1,35 +1,85 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: polycloudops-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - N8N_TRANSLATE_WEBHOOK_URL=http://n8n:5678/webhook/translation
+      - N8N_QR_WEBHOOK_URL=http://n8n:5678/webhook/generate-qr
+      - PORT=3000
+    depends_on:
+      n8n:
+        condition: service_healthy
+    networks:
+      - cloudops-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   n8n:
-    image: n8nio/n8n:2.10.4   
+    image: n8nio/n8n:2.10.4
     container_name: n8n
     restart: unless-stopped
     ports:
       - "5678:5678"
-    environment:
+    environment:   
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
-      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
-      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
-      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
-      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
-      - DB_POSTGRESDB_SSL_ENABLED=${DB_POSTGRESDB_SSL_ENABLED}
-      - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false    
+      - DB_POSTGRESDB_HOST=${PGHOST}
+      - DB_POSTGRESDB_DATABASE=${PGDATABASE}
+      - DB_POSTGRESDB_USER=${PGUSER}
+      - DB_POSTGRESDB_PASSWORD=${PGPASSWORD}
+      - DB_POSTGRESDB_PORT=${PGPORT:-5432}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - DB_POSTGRESDB_SSL_ENABLED=false
       - N8N_PORT=5678
       - DEEPL_API_KEY=${DEEPL_API_KEY}
+
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows
     
+    depends_on:
+      postgres:
+        condition: service_healthy
+
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:${N8N_PORT:-5678}/healthz || exit 1"]
       interval: 60s
       timeout: 10s
       retries: 5
+    networks:
+      - cloudops-network
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${PGUSER}
+      - POSTGRES_PASSWORD=${PGPASSWORD}
+      - POSTGRES_DB=${PGDATABASE}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./init_db:/docker-entrypoint-initdb.d
+    ports:
+      - "${PGPORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${PGUSER} -d ${PGDATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   db-bootstrap:
     image: postgres:17-alpine
-    container_name: n8n-staging-db-setup
+    container_name: n8n-db-setup
     depends_on:
       n8n:
         condition: service_healthy
@@ -38,15 +88,21 @@ services:
     tmpfs:
       - /var/lib/postgresql/data:mode=0700
     environment:
-      - PGPASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - PGPASSWORD=${PGPASSWORD}
       - ADMIN_EMAIL=${N8N_ADMIN_EMAIL:-admin@cloudops.com}
-      - ADMIN_PASSWORD=${N8N_ADMIN_PASSWORD}
+      - ADMIN_PASSWORD=${N8N_ADMIN_PASSWORD} 
     command: >
-      sh -c "psql \"host=${DB_POSTGRESDB_HOST} user=${DB_POSTGRESDB_USER} dbname=${DB_POSTGRESDB_DATABASE} sslmode=require\" 
+      sh -c "psql -h ${PGHOST} -U ${PGUSER} -d ${PGDATABASE} 
       -v admin_email=\"$$ADMIN_EMAIL\" 
-      -v admin_password=\"$$ADMIN_PASSWORD\" 
+      -v admin_password=\"$$ADMIN_PASSWORD\"
       -f /scripts/setup-n8n.sql"
     restart: "no"
 volumes:
   n8n_data:
     driver: local
+  db_data:
+    driver: local
+
+networks:
+  cloudops-network:
+    driver: bridge
