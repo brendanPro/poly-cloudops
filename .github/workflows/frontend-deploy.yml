@@ -13,13 +13,6 @@ permissions:
   contents: read
   id-token: write
 
-env:
-  REGION: europe-west1
-  PROJECT_ID: polycloudops
-  REPOSITORY: n8n-repo
-  IMAGE: frontend
-  SERVICE: frontend-service
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -59,63 +52,48 @@ jobs:
           N8N_CURRENCY_WEBHOOK_URL: ${{ secrets.N8N_CURRENCY_WEBHOOK_URL }}
 
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           token_format: access_token
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Setup Dagger
+        uses: dagger/dagger-action@v7
+        with:
+          version: "0.19.10"
 
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
-
-      - name: Build Docker image
-        run: |
-          DOCKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}"
-          docker build \
-            -t "${DOCKER_IMAGE}:latest" \
-            -t "${DOCKER_IMAGE}:${GITHUB_SHA}" \
-            ./frontend
-
-      - name: Push Docker image
-        run: |
-          DOCKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}"
-          docker push "${DOCKER_IMAGE}:latest"
-          docker push "${DOCKER_IMAGE}:${GITHUB_SHA}"
-
-      - name: Deploy to Cloud Run
+      - name: Deploy frontend via Dagger
         id: deploy
-        run: |
-          DOCKER_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}"
-
-          gcloud run deploy "${SERVICE}" \
-            --project "${PROJECT_ID}" \
-            --region "${REGION}" \
-            --platform managed \
-            --allow-unauthenticated \
-            --image "${DOCKER_IMAGE}:${GITHUB_SHA}" \
-            --port 3000 \
-            --set-env-vars "N8N_TRANSLATE_WEBHOOK_URL=${N8N_TRANSLATE_WEBHOOK_URL},N8N_QR_WEBHOOK_URL=${N8N_QR_WEBHOOK_URL},N8N_JSON_EXCEL_WEBHOOK_URL=${N8N_JSON_EXCEL_WEBHOOK_URL},N8N_SUMMARIZE_WEBHOOK_URL=${N8N_SUMMARIZE_WEBHOOK_URL},N8N_WEATHER_WEBHOOK_URL=${N8N_WEATHER_WEBHOOK_URL},N8N_CURRENCY_WEBHOOK_URL=${N8N_CURRENCY_WEBHOOK_URL}"
-
-          SERVICE_URL="$(gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')"
-          echo "url=${SERVICE_URL}" >> "$GITHUB_OUTPUT"
         env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           N8N_TRANSLATE_WEBHOOK_URL: ${{ secrets.N8N_TRANSLATE_WEBHOOK_URL }}
           N8N_QR_WEBHOOK_URL: ${{ secrets.N8N_QR_WEBHOOK_URL }}
           N8N_JSON_EXCEL_WEBHOOK_URL: ${{ secrets.N8N_JSON_EXCEL_WEBHOOK_URL }}
           N8N_SUMMARIZE_WEBHOOK_URL: ${{ secrets.N8N_SUMMARIZE_WEBHOOK_URL }}
           N8N_WEATHER_WEBHOOK_URL: ${{ secrets.N8N_WEATHER_WEBHOOK_URL }}
           N8N_CURRENCY_WEBHOOK_URL: ${{ secrets.N8N_CURRENCY_WEBHOOK_URL }}
+        run: |
+          URL="$(dagger call deploy-frontend \
+            --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+            --commit-sha "${{ github.sha }}" \
+            --n8n-translate-webhook-url env:N8N_TRANSLATE_WEBHOOK_URL \
+            --n8n-qr-webhook-url env:N8N_QR_WEBHOOK_URL \
+            --n8n-json-excel-webhook-url env:N8N_JSON_EXCEL_WEBHOOK_URL \
+            --n8n-summarize-webhook-url env:N8N_SUMMARIZE_WEBHOOK_URL \
+            --n8n-weather-webhook-url env:N8N_WEATHER_WEBHOOK_URL \
+            --n8n-currency-webhook-url env:N8N_CURRENCY_WEBHOOK_URL \
+            --progress=plain)"
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
       - name: Publish deployment summary
         run: |
           {
             echo "## Frontend Deployment"
             echo ""
-            echo "- **Service:** ${SERVICE}"
-            echo "- **Region:** ${REGION}"
-            echo "- **Image:** ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:${GITHUB_SHA}"
+            echo "- **Service:** frontend-service"
+            echo "- **Region:** europe-west1"
+            echo "- **Image:** europe-west1-docker.pkg.dev/polycloudops/n8n-repo/frontend:${{ github.sha }}"
             echo "- **URL:** ${{ steps.deploy.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
