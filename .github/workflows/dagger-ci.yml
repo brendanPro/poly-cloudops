@@ -56,12 +56,16 @@ jobs:
           N8N_ADMIN_PASSWORD: ${{ secrets.N8N_ADMIN_PASSWORD }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_ORG_ID: ${{ secrets.NEON_ORG_ID }}
+          TF_VAR_WIF_PROVIDER_NAME: ${{ secrets.TF_VAR_WIF_PROVIDER_NAME }}
+          TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL: ${{ secrets.TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL }}
         run: |
           PLAN_OUTPUT="$(dagger call plan \
             --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
             --admin-password env:N8N_ADMIN_PASSWORD \
             --neon-api-key env:NEON_API_KEY \
             --neon-org-id env:NEON_ORG_ID \
+            --wif-provider-name env:TF_VAR_WIF_PROVIDER_NAME \
+            --wif-service-account-email env:TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL \
             --progress=plain)"
           {
             echo "plan_output<<EOF"

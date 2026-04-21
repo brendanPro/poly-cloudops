@@ -44,12 +44,16 @@ export class PolyCloudops {
     googleOauthAccessToken: Secret,
     adminPassword: Secret,
     neonApiKey: Secret,
-    neonOrgId: Secret
+    neonOrgId: Secret,
+    wifProviderName: Secret,
+    wifServiceAccountEmail: Secret
   ): Promise<string> {
     const container = this.withAuth(this.terraformBase(), googleOauthAccessToken)
       .withSecretVariable("TF_VAR_n8n_admin_password", adminPassword)
       .withSecretVariable("TF_VAR_neon_api_key", neonApiKey)
       .withSecretVariable("TF_VAR_neon_org_id", neonOrgId)
+      .withSecretVariable("TF_VAR_wif_provider_name", wifProviderName)
+      .withSecretVariable("TF_VAR_wif_service_account_email", wifServiceAccountEmail)
       .withExec(["terraform", "fmt", "-check", "-recursive", "-no-color"])
       .withExec(["terraform", "init", "-no-color"])
       .withExec(["terraform", "validate", "-no-color"])
