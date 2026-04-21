@@ -59,7 +59,7 @@ jobs:
         run: |
           PLAN_OUTPUT="$(dagger call plan \
             --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
-            --n8n-admin-password env:N8N_ADMIN_PASSWORD \
+            --admin-password env:N8N_ADMIN_PASSWORD \
             --neon-api-key env:NEON_API_KEY \
             --neon-org-id env:NEON_ORG_ID \
             --progress=plain)"

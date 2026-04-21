@@ -78,12 +78,12 @@ jobs:
           URL="$(dagger call deploy-frontend \
             --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
             --commit-sha "${{ github.sha }}" \
-            --n8n-translate-webhook-url env:N8N_TRANSLATE_WEBHOOK_URL \
-            --n8n-qr-webhook-url env:N8N_QR_WEBHOOK_URL \
-            --n8n-json-excel-webhook-url env:N8N_JSON_EXCEL_WEBHOOK_URL \
-            --n8n-summarize-webhook-url env:N8N_SUMMARIZE_WEBHOOK_URL \
-            --n8n-weather-webhook-url env:N8N_WEATHER_WEBHOOK_URL \
-            --n8n-currency-webhook-url env:N8N_CURRENCY_WEBHOOK_URL \
+            --translate-webhook-url env:N8N_TRANSLATE_WEBHOOK_URL \
+            --qr-webhook-url env:N8N_QR_WEBHOOK_URL \
+            --json-excel-webhook-url env:N8N_JSON_EXCEL_WEBHOOK_URL \
+            --summarize-webhook-url env:N8N_SUMMARIZE_WEBHOOK_URL \
+            --weather-webhook-url env:N8N_WEATHER_WEBHOOK_URL \
+            --currency-webhook-url env:N8N_CURRENCY_WEBHOOK_URL \
             --progress=plain)"
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
 

@@ -42,12 +42,12 @@ export class PolyCloudops {
   @func()
   async plan(
     googleOauthAccessToken: Secret,
-    n8nAdminPassword: Secret,
+    adminPassword: Secret,
     neonApiKey: Secret,
     neonOrgId: Secret
   ): Promise<string> {
     const container = this.withAuth(this.terraformBase(), googleOauthAccessToken)
-      .withSecretVariable("TF_VAR_n8n_admin_password", n8nAdminPassword)
+      .withSecretVariable("TF_VAR_n8n_admin_password", adminPassword)
       .withSecretVariable("TF_VAR_neon_api_key", neonApiKey)
       .withSecretVariable("TF_VAR_neon_org_id", neonOrgId)
       .withExec(["terraform", "fmt", "-check", "-recursive", "-no-color"])
@@ -81,12 +81,12 @@ export class PolyCloudops {
   async deployFrontend(
     googleOauthAccessToken: Secret,
     commitSha: string,
-    n8nTranslateWebhookUrl: Secret,
-    n8nQrWebhookUrl: Secret,
-    n8nJsonExcelWebhookUrl: Secret,
-    n8nSummarizeWebhookUrl: Secret,
-    n8nWeatherWebhookUrl: Secret,
-    n8nCurrencyWebhookUrl: Secret,
+    translateWebhookUrl: Secret,
+    qrWebhookUrl: Secret,
+    jsonExcelWebhookUrl: Secret,
+    summarizeWebhookUrl: Secret,
+    weatherWebhookUrl: Secret,
+    currencyWebhookUrl: Secret,
   ): Promise<string> {
     const imageRef = `${IMAGE_BASE}:${commitSha}`;
 
@@ -99,12 +99,12 @@ export class PolyCloudops {
     return await dag.container()
       .from("google/cloud-sdk:alpine")
       .withSecretVariable("CLOUDSDK_AUTH_ACCESS_TOKEN", googleOauthAccessToken)
-      .withSecretVariable("N8N_TRANSLATE_WEBHOOK_URL", n8nTranslateWebhookUrl)
-      .withSecretVariable("N8N_QR_WEBHOOK_URL", n8nQrWebhookUrl)
-      .withSecretVariable("N8N_JSON_EXCEL_WEBHOOK_URL", n8nJsonExcelWebhookUrl)
-      .withSecretVariable("N8N_SUMMARIZE_WEBHOOK_URL", n8nSummarizeWebhookUrl)
-      .withSecretVariable("N8N_WEATHER_WEBHOOK_URL", n8nWeatherWebhookUrl)
-      .withSecretVariable("N8N_CURRENCY_WEBHOOK_URL", n8nCurrencyWebhookUrl)
+      .withSecretVariable("N8N_TRANSLATE_WEBHOOK_URL", translateWebhookUrl)
+      .withSecretVariable("N8N_QR_WEBHOOK_URL", qrWebhookUrl)
+      .withSecretVariable("N8N_JSON_EXCEL_WEBHOOK_URL", jsonExcelWebhookUrl)
+      .withSecretVariable("N8N_SUMMARIZE_WEBHOOK_URL", summarizeWebhookUrl)
+      .withSecretVariable("N8N_WEATHER_WEBHOOK_URL", weatherWebhookUrl)
+      .withSecretVariable("N8N_CURRENCY_WEBHOOK_URL", currencyWebhookUrl)
       .withExec(["bash", "-c",
         `set -e
          gcloud run deploy frontend-service \
