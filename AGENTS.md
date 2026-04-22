@@ -202,7 +202,7 @@ Two GitHub Actions workflows:
 3. Builds and pushes Docker image to Artifact Registry
 4. Deploys to Cloud Run `frontend-service`
 
-Required GitHub Secrets: `GCP_WIF_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `PLAN_ENCRYPTION_KEY`, `NEON_API_KEY`, `NEON_ORG_ID`, `N8N_ADMIN_PASSWORD`, `TF_VAR_WIF_PROVIDER_NAME`, `TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL`, plus all 7 frontend webhook URL secrets.
+Required GitHub Secrets: `GCP_WIF_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `PLAN_ENCRYPTION_KEY`, `NEON_API_KEY`, `NEON_ORG_ID`, `N8N_ADMIN_PASSWORD`, `TF_VAR_WIF_PROVIDER_NAME`, `TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL`, plus all 6 frontend webhook URL secrets (`N8N_TRANSLATE_WEBHOOK_URL`, `N8N_QR_WEBHOOK_URL`, `N8N_JSON_EXCEL_WEBHOOK_URL`, `N8N_SUMMARIZE_WEBHOOK_URL`, `N8N_WEATHER_WEBHOOK_URL`, `N8N_CURRENCY_WEBHOOK_URL`).
 
 ## Troubleshooting
 

@@ -1,0 +1,105 @@
+name: Dagger CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "terraform/**"
+      - "src/**"
+      - "dagger.json"
+      - ".github/workflows/dagger-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  dagger-validate:
+    name: Dagger Terraform Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          access_token_lifetime: 600s
+
+      - name: Setup Dagger
+        uses: dagger/dagger-action@v7
+        with:
+          version: "0.19.10"
+
+      - name: Dagger Validate
+        id: validate
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          dagger call validate \
+            --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+            --progress=plain
+
+      - name: Dagger Plan
+        id: plan
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          N8N_ADMIN_PASSWORD: ${{ secrets.N8N_ADMIN_PASSWORD }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_ORG_ID: ${{ secrets.NEON_ORG_ID }}
+          TF_VAR_WIF_PROVIDER_NAME: ${{ secrets.TF_VAR_WIF_PROVIDER_NAME }}
+          TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL: ${{ secrets.TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL }}
+        run: |
+          PLAN_OUTPUT="$(dagger call plan \
+            --google-oauth-access-token env:GOOGLE_OAUTH_ACCESS_TOKEN \
+            --admin-password env:N8N_ADMIN_PASSWORD \
+            --neon-api-key env:NEON_API_KEY \
+            --neon-org-id env:NEON_ORG_ID \
+            --wif-provider-name env:TF_VAR_WIF_PROVIDER_NAME \
+            --wif-service-account-email env:TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL \
+            --progress=plain)"
+          SANITIZED="$(echo "$PLAN_OUTPUT" | sed -E 's/(value = ")[^"]{20,}/\1***REDACTED***/g')"
+          {
+            echo "plan_output<<EOF"
+            echo "$SANITIZED"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment PR with Dagger results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          VALIDATE_OUTCOME: "${{ steps.validate.outcome }}"
+          PLAN_OUTCOME: "${{ steps.plan.outcome }}"
+          PLAN: "${{ steps.plan.outputs.plan_output }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### :dagger: Dagger Validate \`${process.env.VALIDATE_OUTCOME}\`
+            #### :dagger: Dagger Plan \`${process.env.PLAN_OUTCOME}\`
+
+            <details><summary>Show Plan Output</summary>
+
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Triggered by: @${{ github.actor }} — \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

@@ -1,0 +1,8 @@
+{
+  "name": "poly-cloudops",
+  "engineVersion": "v0.19.10",
+  "sdk": {
+    "source": "typescript",
+    "config": {}
+  }
+}
