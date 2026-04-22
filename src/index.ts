@@ -66,9 +66,34 @@ export class PolyCloudops {
 
   @func()
   buildFrontend(): Container {
-    return dag.container().build(
-      dag.currentModule().source().directory("frontend")
-    );
+    const src = dag.currentModule().source().directory("frontend");
+
+    const builder = dag.container()
+      .from("node:20-alpine")
+      .withExec(["apk", "add", "--no-cache", "bash", "curl", "unzip"])
+      .withExec(["sh", "-c", "curl -fsSL https://bun.sh/install | bash"])
+      .withExec(["sh", "-c", "ln -s /root/.bun/bin/bun /usr/local/bin/bun"])
+      .withWorkdir("/app")
+      .withFile("/app/package.json", src.file("package.json"))
+      .withFile("/app/bun.lock", src.file("bun.lock"))
+      .withExec(["bun", "install", "--frozen-lockfile"])
+      .withDirectory("/app", src, { exclude: ["node_modules/", ".next/"] })
+      .withExec(["bun", "run", "build"]);
+
+    return dag.container()
+      .from("node:20-alpine")
+      .withExec(["apk", "add", "--no-cache", "bash"])
+      .withEnvVariable("NODE_ENV", "production")
+      .withExec(["addgroup", "--system", "--gid", "1001", "nodejs"])
+      .withExec(["adduser", "--system", "--uid", "1001", "nextjs"])
+      .withWorkdir("/app")
+      .withDirectory("/app", builder.directory("/app/.next/standalone"), { owner: "nextjs:nodejs" })
+      .withDirectory("/app/.next/static", builder.directory("/app/.next/static"), { owner: "nextjs:nodejs" })
+      .withDirectory("/app/public", builder.directory("/app/public"), { owner: "nextjs:nodejs" })
+      .withUser("nextjs")
+      .withEnvVariable("PORT", "3000")
+      .withEnvVariable("HOSTNAME", "0.0.0.0")
+      .withEntrypoint(["node", "server.js"]);
   }
 
   @func()
