@@ -42,26 +42,24 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    Push["Push to main / develop"] -->|"terraform/** changed"| Validate["terraform-validate\nfmt, init, validate, plan\nencrypt + upload plan artifact"]
-    Push -->|"frontend/** changed on main"| FrontendDeploy["frontend-deploy\nbuild Docker, push to AR\ndeploy to Cloud Run"]
-    Validate -->|"develop push"| Staging["Deploy Staging\nauto-apply plan"]
-    Validate -->|"main push"| ProdGate["Production Approval Gate"]
-    ProdGate -->|"approved"| Prod["Deploy Production\napply plan"]
+    Push["Push / PR to main / develop"] -->|"terraform/** src/** dagger.json"| DaggerValidate["dagger-ci.yml\nDagger validate + plan\ncomment plan on PR"]
+    Push -->|"frontend/** on main"| DaggerFrontend["frontend-deploy.yml\nDagger build + publish\n+ deploy to Cloud Run"]
 
-    style Validate fill:#1d4ed8,color:#fff
-    style FrontendDeploy fill:#7c3aed,color:#fff
+    subgraph "Existing Terraform Pipeline"
+        TF["terraform-validate.yml\nfmt, init, validate, plan\nencrypt + upload artifact"]
+        TF -->|"develop push"| Staging["Deploy Staging\nauto-apply plan"]
+        TF -->|"main push"| ProdGate["Production Approval Gate"]
+        ProdGate -->|"approved"| Prod["Deploy Production\napply plan"]
+    end
+
+    style DaggerValidate fill:#1d4ed8,color:#fff
+    style DaggerFrontend fill:#7c3aed,color:#fff
     style Staging fill:#059669,color:#fff
     style Prod fill:#dc2626,color:#fff
     style ProdGate fill:#d97706,color:#fff
 ```
 
-## Students
-
-- Samuel
-- Elyazid
-- Ouidad
-
-Supervisor: Brendan Gouin 
+Supervisor: Brendan Gouin
 
 ## Stack
 
@@ -72,7 +70,7 @@ Supervisor: Brendan Gouin
 | Database | Neon (serverless PostgreSQL) |
 | Infrastructure | Terraform (GCP provider + Neon provider) |
 | Secrets | GCP Secret Manager |
-| CI/CD | GitHub Actions + Terraform workspaces |
+| CI/CD | GitHub Actions + Dagger + Terraform workspaces |
 | Local dev | Docker Compose |
 | Package manager | Bun |
 
@@ -81,6 +79,7 @@ Supervisor: Brendan Gouin
 ```
 frontend/        Next.js application
 terraform/       Infrastructure as Code (GCP + Neon)
+src/             Dagger module (TypeScript CI/CD functions)
 workflows/       n8n workflow JSON exports
 bootstrap/       SQL and JS scripts to initialize the n8n admin user
 init_db/         SQL run on local Postgres startup

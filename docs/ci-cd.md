@@ -6,34 +6,54 @@ This document describes the two GitHub Actions pipelines, how Terraform workspac
 
 ```mermaid
 flowchart TD
-    subgraph "Terraform Pipeline"
-        A[Push terraform/**] --> B[terraform-validate\nfmt, init, validate, plan]
-        B --> C[Encrypt plan, upload artifact]
-        B --> D[Comment plan on PR]
-        C --> E{Which branch?}
-        E -->|develop| F[Deploy Staging\nauto-apply]
-        E -->|main| G[Production Approval Gate]
-        G -->|approved| H[Deploy Production\napply plan]
+    subgraph "Dagger CI Pipeline (dagger-ci.yml)"
+        A["PR / Push\nterraform/** src/** dagger.json"] --> B["Dagger Validate\nfmt + init + validate"]
+        B --> C["Dagger Plan\nplan with all TF_VARs\nsanitize secrets in output"]
+        C --> D["Comment plan on PR"]
     end
 
-    subgraph "Frontend Pipeline"
-        I[Push frontend/** to main] --> J[Validate 7 webhook secrets]
-        J --> K[Build Docker image]
-        K --> L[Push to Artifact Registry]
-        L --> M[Deploy to Cloud Run]
+    subgraph "Dagger Frontend Pipeline (frontend-deploy.yml)"
+        I["Push frontend/** to main"] --> J["Validate 7 webhook secrets"]
+        J --> K["Dagger build-frontend\nnative pipeline (no Dockerfile)"]
+        K --> L["Publish to Artifact Registry"]
+        L --> M["Dagger deploy-frontend\ngcloud run deploy"]
+    end
+
+    subgraph "Existing Terraform Pipeline (terraform-validate.yml)"
+        T["Push terraform/**"] --> U["fmt, init, validate, plan\nencrypt + upload artifact"]
+        U --> V{Which branch?}
+        V -->|develop| W["Deploy Staging\nauto-apply"]
+        V -->|main| X["Production Approval Gate"]
+        X -->|approved| Y["Deploy Production\napply plan"]
     end
 
     style B fill:#1d4ed8,color:#fff
-    style F fill:#059669,color:#fff
-    style H fill:#dc2626,color:#fff
+    style C fill:#1d4ed8,color:#fff
     style K fill:#7c3aed,color:#fff
     style M fill:#7c3aed,color:#fff
-    style G fill:#d97706,color:#fff
+    style W fill:#059669,color:#fff
+    style Y fill:#dc2626,color:#fff
+    style X fill:#d97706,color:#fff
 ```
 
 ## Pipelines
 
-### `terraform-validate.yml` — infrastructure
+### `dagger-ci.yml` — Dagger CI (Terraform validate + plan)
+
+Triggered by:
+- Pull requests targeting `main` or `develop` when `terraform/**`, `src/**`, `dagger.json` change
+- Manual `workflow_dispatch`
+
+This pipeline runs read-only Terraform operations through the Dagger module.
+
+Steps:
+1. Authenticate to GCP via WIF
+2. `dagger call validate` — runs `terraform fmt`, `init`, and `validate` inside a Dagger container
+3. `dagger call plan` — runs `terraform plan` with all required `TF_VAR_*` secret variables, sanitizes sensitive values from the output, posts the plan as a PR comment
+
+The plan output is sanitized using `sed` to redact any env var value longer than 20 characters, preventing API keys and tokens from leaking in PR comments.
+
+### `terraform-validate.yml` — infrastructure (existing)
 
 Triggered by:
 - Push to `main` or `develop` when `terraform/**` changes
@@ -68,19 +88,26 @@ Requires Job 1 to succeed, workspace to be `default`, and **manual approval** vi
 
 The plan is encrypted so it can be safely passed as an artifact between jobs without exposing infrastructure details in the artifact storage.
 
-### `frontend-deploy.yml` — frontend
+### `frontend-deploy.yml` — frontend (Dagger)
 
 Triggered by:
 - Push to `main` when `frontend/**` changes
 - Manual `workflow_dispatch`
 
+This pipeline is a thin Dagger wrapper. All build and deploy logic lives in the Dagger module (`src/index.ts`).
+
 Steps:
 1. Validate that all 7 webhook secrets are non-empty (fails fast if any is missing)
 2. Authenticate to GCP via WIF
-3. `docker build` the frontend image with two tags: `latest` and `$GITHUB_SHA`
-4. Push both tags to Artifact Registry (`europe-west1-docker.pkg.dev/polycloudops/n8n-repo/frontend`)
-5. `gcloud run deploy frontend-service` with all webhook URLs passed as `--set-env-vars`
-6. Output the deployed service URL to the job summary
+3. Call `dagger call deploy-frontend` which:
+   - Builds the Next.js app using native Dagger pipeline operations (no Dockerfile) — installs Bun, runs `bun install`, `bun run build`, produces a standalone output in a multi-stage Container
+   - Publishes the image to Artifact Registry with two tags: `$commitSha` and `latest`
+   - Runs `gcloud run deploy frontend-service` inside a `google/cloud-sdk` container, passing all 6 webhook URLs as env vars
+4. Outputs the deployed service URL
+
+The Dagger module function `buildFrontend()` replicates the multi-stage Dockerfile (`frontend/Dockerfile`) as native Dagger Container API calls:
+- **Stage 1 (builder)**: `node:20-alpine` + Bun install + `bun install --frozen-lockfile` + `bun run build`
+- **Stage 2 (runner)**: `node:20-alpine` + copies standalone output, static assets, and public directory from the builder container
 
 There is no staging deployment for the frontend — only `main` triggers it.
 
@@ -99,7 +126,7 @@ Both workspaces share the same GCP project (`polycloudops`) but create isolated 
 
 ## GitHub Secrets required
 
-### Terraform pipeline
+### Terraform pipeline (used by both dagger-ci.yml and terraform-validate.yml)
 
 | Secret | Description |
 |---|---|
@@ -124,7 +151,6 @@ Both workspaces share the same GCP project (`polycloudops`) but create isolated 
 | `N8N_SUMMARIZE_WEBHOOK_URL` | n8n webhook URL for AI summarizer |
 | `N8N_WEATHER_WEBHOOK_URL` | n8n webhook URL for weather |
 | `N8N_CURRENCY_WEBHOOK_URL` | n8n webhook URL for currency conversion |
-| `NEXT_PUBLIC_N8N_GIF_FORM_URL` | n8n form trigger URL for the GIF converter (if implemented) |
 
 ## Workload Identity Federation
 
