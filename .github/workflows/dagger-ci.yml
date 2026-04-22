@@ -67,9 +67,10 @@ jobs:
             --wif-provider-name env:TF_VAR_WIF_PROVIDER_NAME \
             --wif-service-account-email env:TF_VAR_WIF_SERVICE_ACCOUNT_EMAIL \
             --progress=plain)"
+          SANITIZED="$(echo "$PLAN_OUTPUT" | sed -E 's/(value = ")[^"]{20,}/\1***REDACTED***/g')"
           {
             echo "plan_output<<EOF"
-            echo "$PLAN_OUTPUT"
+            echo "$SANITIZED"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
